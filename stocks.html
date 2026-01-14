@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SM MEGAMALL - Check Stocks</title>
+    <style>
+        :root {
+            --sidebar-width: 220px;
+            --primary: #2c3e50;
+            --success: #27ae60;
+            --danger: #e74c3c;
+            --warning: #f39c12;
+            --accent: #2980b9;
+            --bg-light: #f4f7f6;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            display: flex;
+            background-color: var(--bg-light);
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Sidebar - Same as POS */
+        .sidebar {
+            width: var(--sidebar-width);
+            background-color: var(--primary);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+        }
+
+        .sidebar-header {
+            padding: 25px 20px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 1.2rem;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            letter-spacing: 1px;
+        }
+
+        .sidebar-menu {
+            flex-grow: 1;
+            padding-top: 20px;
+        }
+
+        .menu-item {
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            color: #bdc3c7;
+            text-decoration: none;
+            transition: 0.2s;
+            font-size: 0.95rem;
+            border-left: 5px solid transparent;
+        }
+
+        .menu-item.active {
+            background: var(--accent);
+            color: white;
+            border-left: 5px solid #fff;
+        }
+
+        .menu-item:hover:not(.active) {
+            background: rgba(255,255,255,0.05);
+            color: white;
+        }
+
+        .menu-item i { margin-right: 12px; width: 20px; text-align: center; }
+
+        /* Main Content */
+        .main-content {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .top-bar {
+            height: 60px;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 25px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        /* Stock Table Container */
+        .stock-wrapper {
+            padding: 20px;
+            height: calc(100vh - 60px);
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .search-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            display: flex;
+            gap: 15px;
+            align-items: flex-end;
+        }
+
+        .form-group { flex: 1; }
+        label { display: block; font-size: 0.75rem; font-weight: bold; color: #666; margin-bottom: 6px; text-transform: uppercase; }
+        input, select { width: 90%; padding: 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 0.9rem; outline: none; }
+        input:focus { border-color: var(--accent); }
+
+        .btn-refresh {
+            padding: 12px 25px;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .table-container {
+            background: white;
+            flex-grow: 1;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            overflow-y: auto;
+            border: 1px solid #eee;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        thead th {
+            position: sticky;
+            top: 0;
+            background: #f8f9fa;
+            padding: 15px;
+            font-size: 0.85rem;
+            color: var(--primary);
+            border-bottom: 2px solid #eee;
+            z-index: 10;
+        }
+
+        tbody td {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            font-size: 0.9rem;
+            color: #333;
+        }
+
+        .stock-badge {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+
+        .status-good { background: #e8f5e9; color: var(--success); }
+        .status-low { background: #fff3e0; color: var(--warning); }
+        .status-critical { background: #ffebee; color: var(--danger); }
+
+        .barcode-text { font-family: monospace; color: var(--accent); font-weight: bold; }
+
+        #sync-indicator { font-size: 0.75rem; color: var(--success); }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <div class="sidebar-header">SM MEGAMALL</div>
+        <div class="sidebar-menu">
+            <a href="pos.html" class="menu-item"><i>🛒</i> Point of Sale</a>
+            <a href="stocks.html" class="menu-item active"><i>📦</i> Check Stocks</a>
+            <a href="index.html" class="menu-item" style="margin-top: auto;"><i>🚪</i> Logout</a>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="top-bar">
+            <div style="font-weight: 600; color: var(--primary);">REAL-TIME INVENTORY VIEWER</div>
+            <div id="sync-indicator">● System Online</div>
+        </div>
+
+        <div class="stock-wrapper">
+            <div class="search-card">
+                <div class="form-group">
+                    <label>Search Product</label>
+                    <input type="text" id="stockSearch" placeholder="Enter Product Name or Barcode..." oninput="filterStock()">
+                </div>
+                <div class="form-group" style="flex: 0.4; display:none;">
+                    <label>Stock Status</label>
+                    <select id="statusFilter" onchange="filterStock()">
+                        <option value="all">All Items</option>
+                        <option value="good">Healthy Stock</option>
+                        <option value="low">Low Stock</option>
+                        <option value="critical">Critical/Out</option>
+                    </select>
+                </div>
+                <button class="btn-refresh" onclick="fetchInventory()">REFRESH DATA</button>
+            </div>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Barcode</th>
+                            <th>Item Description</th>
+                            <th>Category</th>
+                            <th>Unit Price</th>
+                        </tr>
+                    </thead>
+                    <tbody id="stock-table-body">
+                        <tr><td colspan="6" style="text-align:center; padding:50px; color:#999;">Loading inventory data...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SHEETS_URL = "https://script.google.com/macros/s/AKfycbz8BC14a1Y97AXLzmv0lLO52Nl2-FNqAqOPwEsqCoUn3lCfL_zRtw_-NjaSn924Vgi3/exec";
+        let inventoryData = [];
+
+        window.onload = fetchInventory;
+
+        async function fetchInventory() {
+            const indicator = document.getElementById('sync-indicator');
+            indicator.innerText = "● Syncing...";
+            indicator.style.color = "#f39c12";
+
+            try {
+                const response = await fetch(SHEETS_URL);
+                const data = await response.json();
+                inventoryData = data;
+                displayStock(inventoryData);
+                indicator.innerText = "● Live Data Synced";
+                indicator.style.color = "#27ae60";
+            } catch (error) {
+                indicator.innerText = "● Sync Error";
+                indicator.style.color = "#e74c3c";
+            }
+        }
+
+        function displayStock(data) {
+            const tbody = document.getElementById('stock-table-body');
+            let html = "";
+
+            data.forEach(item => {
+                const qty = parseInt(item.stock) || 0;
+                let statusClass = "status-good";
+                let statusText = "HEALTHY";
+
+                if (qty <= 5) {
+                    statusClass = "status-critical";
+                    statusText = "CRITICAL";
+                } else if (qty <= 15) {
+                    statusClass = "status-low";
+                    statusText = "LOW STOCK";
+                }
+
+                html += `
+                    <tr>
+                        <td class="barcode-text">${item.barcode}</td>
+                        <td style="font-weight: 500;">${item.name}</td>
+                        <td>${item.category || 'General'}</td>
+                        <td>₱${parseFloat(item.price).toFixed(2)}</td>
+                    </tr>
+                `;
+            });
+
+            tbody.innerHTML = html || '<tr><td colspan="6" style="text-align:center;">No items found.</td></tr>';
+        }
+
+        function filterStock() {
+            const searchTerm = document.getElementById('stockSearch').value.toLowerCase();
+            const filterValue = document.getElementById('statusFilter').value;
+
+            const filtered = inventoryData.filter(item => {
+                const matchesSearch = item.name.toLowerCase().includes(searchTerm) || item.barcode.includes(searchTerm);
+                const qty = parseInt(item.stock) || 0;
+                
+                let matchesStatus = true;
+                if (filterValue === 'good') matchesStatus = qty > 15;
+                if (filterValue === 'low') matchesStatus = qty <= 15 && qty > 5;
+                if (filterValue === 'critical') matchesStatus = qty <= 5;
+
+                return matchesSearch && matchesStatus;
+            });
+
+            displayStock(filtered);
+        }
+    </script>
+</body>
+</html>

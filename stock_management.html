@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Management - Store Management System</title>
+    <style>
+        :root {
+            --sidebar-width: 250px;
+            --primary: #1e272e;
+            --success: #05c46b;
+            --danger: #ff3f34;
+            --warning: #ffa801;
+            --accent: #3c40c6;
+            --bg-body: #f1f2f6;
+            --text-dark: #2f3542;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            display: flex;
+            background-color: var(--bg-body);
+            height: 100vh;
+        }
+
+        /* SIDEBAR (Exact match with Admin) */
+        .sidebar {
+            width: var(--sidebar-width);
+            background-color: var(--primary);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 4px 0 10px rgba(0,0,0,0.1);
+        }
+
+        .sidebar-brand {
+            padding: 30px 20px;
+            font-size: 1.5rem;
+            font-weight: 800;
+            text-align: center;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            color: var(--success);
+        }
+
+        .sidebar-menu {
+            flex-grow: 1;
+            padding: 20px 0;
+        }
+
+        .menu-link {
+            padding: 15px 25px;
+            display: flex;
+            align-items: center;
+            color: #d2dae2;
+            text-decoration: none;
+            transition: 0.3s;
+            border-left: 4px solid transparent;
+        }
+
+        .menu-link:hover, .menu-link.active {
+            background: rgba(255,255,255,0.05);
+            color: white;
+            border-left-color: var(--success);
+        }
+
+        .menu-link i { margin-right: 15px; width: 20px; text-align: center; }
+
+        /* MAIN CONTENT */
+        .main-container {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .top-nav {
+            height: 70px;
+            background: white;
+            padding: 0 30px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .badge-admin {
+            background: #ef5350;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 5px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .content-padding { padding: 30px; }
+
+        /* STOCK CONTROLS */
+        .controls-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+        }
+
+        .search-box {
+            flex-grow: 1;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 0.9rem;
+        }
+
+        .filter-select {
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: white;
+            min-width: 150px;
+        }
+
+        /* DATA TABLE */
+        .data-section {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th {
+            background: #f8f9fa;
+            padding: 15px;
+            font-size: 0.85rem;
+            color: #485460;
+            border-bottom: 2px solid #eee;
+        }
+
+        td {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            font-size: 0.9rem;
+            color: var(--text-dark);
+        }
+
+        .stock-qty { font-weight: bold; font-size: 1rem; }
+
+        .stock-tag {
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+
+        .good { background: #d2f4ea; color: #05c46b; }
+        .warning { background: #fff5d9; color: #ffa801; }
+        .critical { background: #ffdada; color: #ff3f34; }
+
+        .btn-action {
+            padding: 6px 12px;
+            border: 1px solid #ddd;
+            background: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+
+        #sync-status { font-size: 0.8rem; color: var(--success); font-weight: normal; }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <div class="sidebar-brand">ADMIN PANEL</div>
+        <div class="sidebar-menu">
+            <a href="admin.html" class="menu-link"><i>📊</i> Dashboard Overview</a>
+            <a href="stock_management.html" class="menu-link active"><i>📦</i> Stock Management</a>
+            <a href="#" class="menu-link"><i>📋</i> Inventory Reports</a>
+            <a href="index.html" class="menu-link" style="margin-top: auto; color: #ff5e57;"><i>🚪</i> Logout</a>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="top-nav">
+            <h3 style="color: var(--text-dark); margin:0;">Stock Management <span id="sync-status">● Syncing...</span></h3>
+            <div class="admin-profile" style="display: flex; align-items: center; gap: 15px;">
+                <div style="text-align: right;">
+                    <div style="font-weight: bold; font-size: 0.9rem;">Administrator</div>
+                    <div style="font-size: 0.75rem; color: #808e9b;">Super User Access</div>
+                </div>
+                <span class="badge-admin">Admin</span>
+            </div>
+        </div>
+
+        <div class="content-padding">
+            <div class="controls-card">
+                <input type="text" id="searchInput" class="search-box" placeholder="Search product name..." oninput="filterTable()">
+                <select id="statusFilter" class="filter-select" onchange="filterTable()">
+                    <option value="all">All Inventory</option>
+                    <option value="critical">Critical (0-10)</option>
+                    <option value="warning">Low Stock (11-30)</option>
+                    <option value="good">Healthy (30+)</option>
+                </select>
+                <button class="btn-action" style="background: var(--accent); color: white; border: none; padding: 12px 20px;" onclick="fetchStockData()">Refresh</button>
+            </div>
+			
+
+            <div class="data-section">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Product Name</th>
+                            <th>Category</th>
+                            <th>Current Stock</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="stock-body">
+                        <tr><td colspan="6" style="text-align:center; padding: 50px; color: #888;">Fetching live stock levels...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    // Gamit ang ?action=summary para makuha ang tamang sheet
+    const SHEETS_URL = "https://script.google.com/macros/s/AKfycbz8BC14a1Y97AXLzmv0lLO52Nl2-FNqAqOPwEsqCoUn3lCfL_zRtw_-NjaSn924Vgi3/exec?action=summary";
+    let localStockData = [];
+
+    async function fetchStockData() {
+        const status = document.getElementById('sync-status');
+        try {
+            const response = await fetch(SHEETS_URL);
+            const data = await response.json();
+            localStockData = data;
+            renderTable(data);
+            status.innerText = "● Live (Synced)";
+            status.style.color = "var(--success)";
+        } catch (e) {
+            status.innerText = "● Connection Error";
+            status.style.color = "var(--danger)";
+        }
+    }
+
+    function renderTable(items) {
+        const tbody = document.getElementById('stock-body');
+        let html = "";
+
+        items.forEach(item => {
+            // BINAGO: 'quantity' na ang gamit natin sa App Script
+            const qty = parseInt(item.quantity) || 0; 
+            let tagClass = "good";
+            let tagText = "HEALTHY";
+
+            if (qty <= 10) { tagClass = "critical"; tagText = "CRITICAL"; }
+            else if (qty <= 30) { tagClass = "warning"; tagText = "LOW STOCK"; }
+
+            html += `
+                <tr>
+                    <td style="font-weight:600;">${item.item_name}</td> <td>${item.category || 'General'}</td>
+                    <td class="stock-qty">${qty} pcs</td>
+                    <td><span class="stock-tag ${tagClass}">${tagText}</span></td>
+                    <td><button class="btn-action" onclick="window.open('YOUR_SHEET_URL', '_blank')">Adjust</button></td>
+                </tr>
+            `;
+        });
+        tbody.innerHTML = html || '<tr><td colspan="6" style="text-align:center;">No items found.</td></tr>';
+    }
+
+    function filterTable() {
+        const search = document.getElementById('searchInput').value.toLowerCase();
+        const filter = document.getElementById('statusFilter').value;
+
+        const filtered = localStockData.filter(item => {
+            // BINAGO: item_name ang ginamit sa search
+            const matchesSearch = item.item_name.toLowerCase().includes(search);
+            const qty = parseInt(item.quantity) || 0; 
+            let matchesStatus = true;
+
+            if (filter === 'critical') matchesStatus = qty <= 10;
+            else if (filter === 'warning') matchesStatus = qty > 10 && qty <= 30;
+            else if (filter === 'good') matchesStatus = qty > 30;
+
+            return matchesSearch && matchesStatus;
+        });
+        renderTable(filtered);
+    }
+
+    window.onload = fetchStockData;
+</script>
+</body>
+</html>

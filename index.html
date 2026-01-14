@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Login</title>
+    <style>
+        :root {
+            --primary: #1e272e;
+            --accent: #3c40c6;
+            --success: #05c46b;
+            --danger: #ff3f34;
+            --bg: #f1f2f6;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e272e 0%, #2f3542 100%);
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .login-container {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+            width: 100%;
+            max-width: 380px;
+            text-align: center;
+        }
+
+        .login-container h1 {
+            margin-bottom: 10px;
+            color: var(--primary);
+            font-size: 1.8rem;
+        }
+
+        .login-container p {
+            color: #777;
+            margin-bottom: 30px;
+            font-size: 0.9rem;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: bold;
+            color: #555;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 1rem;
+            transition: 0.3s;
+        }
+
+        input:focus {
+            border-color: var(--accent);
+            outline: none;
+            box-shadow: 0 0 8px rgba(60, 64, 198, 0.2);
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 14px;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+            margin-top: 10px;
+        }
+
+        .login-btn:hover {
+            background: #2e31a3;
+        }
+
+        #error-msg {
+            background: #ffebee;
+            color: var(--danger);
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            margin-bottom: 20px;
+            display: none;
+            border: 1px solid #ffcdd2;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="login-container">
+        <h1>Welcome Back</h1>
+        <p>Please enter your credentials to login</p>
+
+        <div id="error-msg">Invalid username or password!</div>
+
+        <div class="form-group">
+            <label>Username</label>
+            <input type="text" id="username" placeholder="Enter your username">
+        </div>
+
+        <div class="form-group">
+            <label>Password</label>
+            <input type="password" id="password" placeholder="Enter your password">
+        </div>
+
+        <button class="login-btn" onclick="handleLogin()">SIGN IN</button>
+    </div>
+
+    <script>
+        function handleLogin() {
+            const user = document.getElementById('username').value;
+            const pass = document.getElementById('password').value;
+            const error = document.getElementById('error-msg');
+
+            // Reset error message
+            error.style.display = 'none';
+
+            // --- LOGIN LOGIC ---
+            if (user === 'admin' && pass === '123') {
+                
+                // [ SPACE FOR YOUR LINK ]
+                // Halimbawa: window.location.href = "admin_dashboard.html";
+                window.location.href = "admin.html";
+
+            } else if (user === 'smmg' && pass === '123') {
+                
+                // [ SPACE FOR YOUR LINK ]
+                // Halimbawa: window.location.href = "cashier_pos.html";
+                window.location.href = "POS.html";
+				
+			} else if (user === 'smne' && pass === '123') {
+                
+                // [ SPACE FOR YOUR LINK ]
+                // Halimbawa: window.location.href = "cashier_pos.html";
+                window.location.href = "POS-SMNE.html";
+
+            } else {
+                // Show error if login fails
+                error.style.display = 'block';
+            }
+        }
+
+        // Allow login by pressing "Enter" key
+        document.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                handleLogin();
+            }
+        });
+    </script>
+</body>
+</html>
