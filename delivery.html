@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SM MEGAMALL - Unique Item Delivery</title>
+    <link href="css/pos.css" rel="stylesheet">
+    <style>
+        .delivery-grid { display: grid; grid-template-columns: 380px 1fr; gap: 20px; padding: 20px; }
+        .entry-card, .batch-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .batch-card { display: flex; flex-direction: column; min-height: 550px; }
+        .table-container { flex-grow: 1; overflow-y: auto; margin-top: 15px; }
+        .delivery-table { width: 100%; border-collapse: collapse; }
+        .delivery-table th { position: sticky; top: 0; background: #f4f7f6; color: var(--primary); padding: 12px; text-align: left; border-bottom: 2px solid var(--primary); }
+        .delivery-table td { padding: 12px 10px; border-bottom: 1px solid #eee; }
+        .upload-section { border-top: 2px solid #eee; padding-top: 15px; margin-top: 10px; }
+        .btn-upload { width: 100%; padding: 15px; background: #27ae60; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 1rem; }
+        .status-badge { font-size: 0.8rem; padding: 4px 8px; border-radius: 12px; background: #eee; }
+        .barcode-tag { font-family: 'Courier New', Courier, monospace; font-weight: bold; color: #e67e22; background: #fdf2e9; padding: 2px 6px; border-radius: 4px; border: 1px solid #fab1a0; }
+        .price-tag { font-weight: bold; color: #2c3e50; }
+        .item-row:hover { background-color: #fcfcfc; }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <div class="sidebar-header">SM MEGAMALL</div>
+        <div class="sidebar-menu">
+            <a href="POS.html" class="menu-item"><i>🛒</i> Point of Sale</a>
+            <a href="transactions.html" class="menu-item"><i>📜</i> Transactions</a>
+            <a href="delivery.html" class="menu-item active"><i>🚚</i> Stock Delivery</a>
+            <a href="stocks.html" class="menu-item"><i>📦</i> Check Stocks</a>
+            <a href="index.html" class="menu-item" style="margin-top: auto;"><i>🚪</i> Logout</a>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="top-bar">
+            <div style="font-weight: 600; color: var(--primary);">
+                UNIQUE BARCODE ENTRY <span id="sync-status" class="status-badge">Ready</span>
+            </div>
+        </div>
+
+        <div class="delivery-grid">
+            <div class="entry-card">
+                <h3 style="margin-top:0; color: var(--primary);">Stock In</h3>
+                
+                <div class="form-group">
+                    <label>Item Description (Common Name)</label>
+                    <input type="text" id="dr_name" list="inventory-data" placeholder="Piliin ang Item Name..." onchange="autoFillPrice()" onkeypress="handleEnter(event, 'dr_price')">
+                    <datalist id="inventory-data"></datalist>
+                </div>
+
+                <div class="form-group">
+                    <label>Item Price</label>
+                    <input type="number" id="dr_price" placeholder="0.00" onkeypress="handleEnter(event, 'dr_barcode')">
+                </div>
+
+                <div class="form-group">
+                    <label>Unique Barcode / Serial</label>
+                    <input type="text" id="dr_barcode" placeholder="I-scan o i-type ang barcode..." autofocus onkeypress="handleBarcodeEntry(event)">
+                </div>
+
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 6px; border-left: 4px solid var(--accent); margin-top: 20px;">
+                    <small style="color: #666; line-height: 1.4; display: block;">
+                        <strong>Instruction:</strong><br>
+                        1. Piliin ang <b>Item Name</b>.<br>
+                        2. Siguraduhing may <b>Price</b> (Automatic itong lalabas kung existing ang item).<br>
+                        3. I-scan ang <b>Barcodes</b>.
+                    </small>
+                </div>
+            </div>
+
+            <div class="batch-card">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <h3 style="margin:0;">Scanned Items Queue</h3>
+                    <button onclick="clearQueue()" style="background: none; border: 1px solid #ccc; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.7rem;">Clear All</button>
+                </div>
+                
+                <div class="table-container">
+                    <table class="delivery-table">
+                        <thead>
+                            <tr>
+                                <th>Item Name</th>
+                                <th>Unique Barcode</th>
+                                <th>Price</th>
+                                <th style="text-align: center;">Qty</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="batch-body"></tbody>
+                    </table>
+                </div>
+
+                <div class="upload-section">
+                    <div style="display:flex; justify-content: space-between; margin-bottom: 10px; font-weight: 600;">
+                        <span>TOTAL SCANNED UNITS: <span id="summary-qty">0</span></span>
+                    </div>
+                    <button class="btn-upload" onclick="submitToWebApp()">🚀 UPLOAD TO GOOGLE SHEETS</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzo-vXPBHVbgMcicqzsbyArkMMU9PFbpxgD4pUPJ_gNJqKO2JwlSbAiWbf9gxxhBt_t/exec";
+
+        let inventoryMaster = []; 
+        let deliveryBatch = []; 
+
+        window.onload = function() {
+            document.getElementById('sync-status').innerText = "Updating Inventory List...";
+            fetch(WEB_APP_URL + "?action=getInventory")
+                .then(res => res.json())
+                .then(data => {
+                    inventoryMaster = data;
+                    loadDatalist();
+                    document.getElementById('sync-status').innerText = "Connected";
+                })
+                .catch(err => {
+                    document.getElementById('sync-status').innerText = "Offline Mode";
+                });
+        };
+
+        function loadDatalist() {
+            const list = document.getElementById('inventory-data');
+            // Kunin ang mga unique names mula sa inventory
+            const uniqueNames = [...new Set(inventoryMaster.map(item => item[1]))];
+            list.innerHTML = uniqueNames.map(name => `<option value="${name}">`).join('');
+        }
+
+        // Automatic na ilalagay ang presyo kapag pumili ng Item Name
+        function autoFillPrice() {
+            const name = document.getElementById('dr_name').value;
+            const match = inventoryMaster.find(i => i[1] === name);
+            if (match) {
+                document.getElementById('dr_price').value = match[2];
+            }
+        }
+
+        function handleBarcodeEntry(event) {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                const barcode = document.getElementById('dr_barcode').value.trim();
+                const name = document.getElementById('dr_name').value.trim();
+                const price = parseFloat(document.getElementById('dr_price').value) || 0;
+                
+                if (!name) {
+                    alert("Pumili muna ng Item Name!");
+                    document.getElementById('dr_name').focus();
+                    return;
+                }
+
+                if (barcode) {
+                    const exists = deliveryBatch.find(i => i.barcode === barcode);
+                    if (exists) {
+                        alert("Barcode na-scan na!");
+                    } else {
+                        deliveryBatch.unshift({ 
+                            name: name, 
+                            barcode: barcode, 
+                            qty: 1, 
+                            price: price 
+                        });
+                        renderTable();
+                    }
+                    document.getElementById('dr_barcode').value = ""; 
+                }
+            }
+        }
+
+        function handleEnter(event, nextId) {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                document.getElementById(nextId).focus();
+            }
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('batch-body');
+            tbody.innerHTML = deliveryBatch.map((item, index) => `
+                <tr class="item-row">
+                    <td>${item.name}</td>
+                    <td><span class="barcode-tag">${item.barcode}</span></td>
+                    <td class="price-tag">₱${item.price.toLocaleString()}</td>
+                    <td style="text-align:center;">1</td>
+                    <td style="text-align:right;">
+                        <button onclick="removeLine(${index})" style="color:#ff7675; background:none; border:none; cursor:pointer; font-size:1.1rem;">✕</button>
+                    </td>
+                </tr>`).join('');
+            
+            document.getElementById('summary-qty').innerText = deliveryBatch.length;
+        }
+
+        function removeLine(i) { 
+            deliveryBatch.splice(i, 1); 
+            renderTable(); 
+        }
+
+        function clearQueue() {
+            if(confirm("Sigurado ka bang lilinisin ang listahan?")) {
+                deliveryBatch = [];
+                renderTable();
+            }
+        }
+
+        function submitToWebApp() {
+            if (deliveryBatch.length === 0) return alert("Walang laman ang listahan!");
+            
+            const btn = document.querySelector('.btn-upload');
+            btn.disabled = true;
+            btn.innerText = "UPLOADING TO SHEETS...";
+
+            fetch(WEB_APP_URL, {
+                method: "POST",
+                mode: "no-cors", 
+                body: JSON.stringify(deliveryBatch)
+            })
+            .then(() => {
+                alert("Stocks successfully updated!");
+                deliveryBatch = [];
+                renderTable();
+                btn.disabled = false;
+                btn.innerText = "🚀 UPLOAD TO GOOGLE SHEETS";
+            })
+            .catch(err => {
+                alert("Error connecting to server.");
+                btn.disabled = false;
+                btn.innerText = "🚀 UPLOAD TO GOOGLE SHEETS";
+            });
+        }
+    </script>
+</body>
+</html>

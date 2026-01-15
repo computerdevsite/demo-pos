@@ -1,0 +1,93 @@
+function doPost(e) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName("Transactions");
+  
+  try {
+    const data = JSON.parse(e.postData.contents);
+    const items = data.items; 
+    const startRow = sheet.getLastRow() + 1;
+    const cashier = data.seller; // Piniling Cashier mula sa JS
+
+    // --- 1. VARIABLE CALCULATIONS ---
+    let totalItemAmount = 0;
+    let serviceFeeAmount = 0;
+
+    items.forEach(item => {
+      if (item.barcode === "SERVICE") {
+        serviceFeeAmount += item.price;
+      } else {
+        totalItemAmount += item.price;
+      }
+    });
+
+    // --- 2. CASHIER COLUMN LOGIC ---
+    let colItem = 0;
+    let colService = 0;
+
+    // Mapping based on your request:
+    if (cashier === "ARENAS") { colItem = 6; colService = 11; }      // F & K
+    else if (cashier === "CLIMACO") { colItem = 7; colService = 12; } // G & L
+    else if (cashier === "KING KING") { colItem = 8; colService = 13; } // H & M
+    else if (cashier === "BUEMIO") { colItem = 9; colService = 14; }  // I & N
+    else if (cashier === "BROZO") { colItem = 10; colService = 15; }  // J & O
+
+    // --- 3. WRITING TO SHEET ---
+    items.forEach((item, index) => {
+      let currentRow = startRow + index;
+      
+      // Isusulat lang ang data na ito sa UNANG ROW ng transaction (Clean Rows)
+      if (index === 0) {
+        sheet.getRange(currentRow, 1).setValue(data.date);    // A
+        sheet.getRange(currentRow, 2).setValue(data.si);      // B
+        sheet.getRange(currentRow, 3).setValue(data.tin);     // C
+        sheet.getRange(currentRow, 4).setValue(data.name);    // D
+        sheet.getRange(currentRow, 5).setValue(data.address); // E
+        
+        // Cashier Specific Totals (F to O)
+        if (colItem > 0) {
+          sheet.getRange(currentRow, colItem).setValue(totalItemAmount);
+          sheet.getRange(currentRow, colService).setValue(serviceFeeAmount);
+        }
+
+        // Grand Total (Column P)
+        sheet.getRange(currentRow, 16).setValue(data.total);
+      }
+
+      // Barcode at Item Name (Sunod-sunod pababa sa S at T)
+      sheet.getRange(currentRow, 19).setValue(item.barcode);  // S
+      sheet.getRange(currentRow, 20).setValue(item.name);     // T
+
+      // Individual Price breakdown (U at V)
+      if (item.barcode === "SERVICE") {
+        sheet.getRange(currentRow, 22).setValue(item.price);  // V
+      } else {
+        sheet.getRange(currentRow, 21).setValue(item.price);  // U
+      }
+    });
+
+    return ContentService.createTextOutput("Success").setMimeType(ContentService.MimeType.TEXT);
+  } catch (err) {
+    return ContentService.createTextOutput("Error: " + err.toString()).setMimeType(ContentService.MimeType.TEXT);
+  }
+}
+
+// --- ITO ANG BINAGO/DINAGDAGAN ---
+function doGet(e) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  
+  // 1. DAGDAG: Logic para sa Transactions Page
+  if (e.parameter.action === "getTransactions") {
+    const txnSheet = ss.getSheetByName("Transactions");
+    const txnData = txnSheet.getDataRange().getValues();
+    // Ibabalik ang buong listahan para sa Transactions Page
+    return ContentService.createTextOutput(JSON.stringify(txnData))
+                         .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  // 2. ANG DATI MONG LOGIC (Para sa Inventory/POS)
+  const sheet = ss.getSheetByName("Inventory");
+  const data = sheet.getDataRange().getValues();
+  data.shift(); 
+  const inv = data.map(r => ({ barcode: String(r[0]), name: String(r[1]), price: parseFloat(r[2]) || 0 }));
+  return ContentService.createTextOutput(JSON.stringify(inv)).setMimeType(ContentService.MimeType.JSON);
+}

@@ -13,6 +13,7 @@
         <div class="sidebar-menu">
             <a href="POS.html" class="menu-item"><i>🛒</i> Point of Sale</a>
             <a href="transactions.html" class="menu-item active"><i>📜</i> Transactions</a>
+            <a href="delivery.html" class="menu-item"><i>🚚</i> Stock Delivery</a>
             <a href="stocks.html" class="menu-item"><i>📦</i> Check Stocks</a>
             <a href="index.html" class="menu-item" style="margin-top: auto;"><i>🚪</i> Logout</a>
         </div>
@@ -145,7 +146,7 @@
                 });
             });
 
-            status.innerText = "Transactions grouped: Parent on top.";
+            status.innerText = "Active";
         } catch (error) {
             status.innerText = "Error grouping data.";
             console.error(error);
