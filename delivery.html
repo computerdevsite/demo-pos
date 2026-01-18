@@ -52,13 +52,13 @@
                 </div>
 
                 <div class="form-group">
-                    <label>Item Price</label>
-                    <input type="number" id="dr_price" placeholder="0.00" onkeypress="handleEnter(event, 'dr_barcode')">
+                    <label>Unique Barcode / Serial</label>
+                    <input type="text" id="dr_barcode" placeholder="I-scan o i-type ang barcode..." autofocus onkeypress="handleBarcodeEntry(event)">
                 </div>
 
                 <div class="form-group">
-                    <label>Unique Barcode / Serial</label>
-                    <input type="text" id="dr_barcode" placeholder="I-scan o i-type ang barcode..." autofocus onkeypress="handleBarcodeEntry(event)">
+                    <label>Item Price</label>
+                    <input type="number" id="dr_price" placeholder="0.00" onkeypress="handleEnter(event, 'dr_barcode')">
                 </div>
 
                 <div style="background: #f8f9fa; padding: 15px; border-radius: 6px; border-left: 4px solid var(--accent); margin-top: 20px;">

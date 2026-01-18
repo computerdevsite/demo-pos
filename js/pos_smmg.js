@@ -1,4 +1,4 @@
-const SHEETS_URL = "https://script.google.com/macros/s/AKfycbz1USQaikCAt_thoeLYfUD4p1vHmrPmY1Ik8tNb_ghLwYhZmlKALjsK8Webs4g_XtP5/exec";
+const SHEETS_URL = "https://script.google.com/macros/s/AKfycbzZZKmJ_AoLhUrM9pAjM5a5_nYl28dxoy9bwS6PorGj7GX3nUiJq_H0ofMSSJXm_Hfi/exec";
 
 let inventory = []; 
 let cart = [];
@@ -113,6 +113,8 @@ function addServiceFee() {
     });
 
     feeInput.value = '';
+    // Alisin ang pula sa border kapag na-enter na nang tama
+    feeInput.classList.remove('invalid-border');
     updateUI();
 }
 
@@ -125,6 +127,9 @@ function removeItem(id) {
 function updateUI() {
     const list = document.getElementById('cart-list');
     const disc = parseFloat(document.getElementById('manual_discount').value) || 0;
+    
+    // --- DAGDAG NA LOGIC PARA SA OTHER DEDUCTIONS ---
+    const otherDed = parseFloat(document.getElementById('other_deductions').value) || 0;
     
     // TINANGGAL ANG SELLER SA PREVIEW-META PARA HINDI MAG-ERROR
     const dateInput = document.getElementById('si_date').value || "---";
@@ -145,10 +150,12 @@ function updateUI() {
     });
 
     list.innerHTML = html;
-    const finalTotal = Math.max(0, sub - disc);
+    
+    // Binago ang computation ng finalTotal para kasama ang other_deductions
+    const finalTotal = Math.max(0, sub - disc - otherDed);
     
     document.getElementById('subtotal-val').innerText = `₱${sub.toFixed(2)}`;
-    document.getElementById('discount-val').innerText = `-₱${disc.toFixed(2)}`;
+    document.getElementById('discount-val').innerText = `-₱${(disc + otherDed).toFixed(2)}`;
     document.getElementById('total-val').innerText = `₱${finalTotal.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
     
     const vatableAmount = finalTotal / 1.12;
@@ -168,17 +175,36 @@ async function processInvoice() {
     const date = document.getElementById('si_date').value;
     const si = document.getElementById('si_number').value;
     const name = document.getElementById('cust_name').value;
+    const feeInput = document.getElementById('service_fee_input');
     
     // Kunin ang napiling Cashier
     const cashierInput = document.querySelector('input[name="cashier"]:checked');
 
-    if (!date || !si || !name || !cashierInput || cart.length === 0) {
-        alert("Kulang ang data (Check Date, SI, Name, at Cashier)!");
+    // --- CHECK KUNG MAY NAPILING CASHIER (REQUIRED) ---
+    if (!cashierInput) {
+        alert("Paki-pili muna ang pangalan ng Cashier (ARENAS, CLIMACO, etc.) bago i-save!");
+        return;
+    }
+
+    // --- BAGONG VALIDATION PARA SA SERVICE FEE ---
+    if (feeInput && feeInput.value.trim() !== "" && parseFloat(feeInput.value) > 0) {
+        alert("May nakalagay na amount sa Service Fee! Paki-ENTER muna ito bago i-proceed ang sale para ma-record sa cart.");
+        feeInput.focus();
+        feeInput.classList.add('invalid-border');
+        return;
+    }
+
+    if (!date || !si || !name || cart.length === 0) {
+        alert("Kulang ang data (Check Date, SI, o Name) o walang laman ang cart!");
         return;
     }
 
     const totalDisplay = document.getElementById('total-val').innerText;
     const totalValue = parseFloat(totalDisplay.replace(/[₱,]/g, '')) || 0;
+
+    // --- COMPUTATION PARA SA COLUMN Q (VATable Sales) AT R (VAT) NA MAY ROUNDING ---
+    const vatableSales = (totalValue / 1.12).toFixed(2);
+    const vatAmount = (vatableSales * 0.12).toFixed(2);
 
     btnSave.innerText = "SAVING...";
     btnSave.disabled = true;
@@ -189,8 +215,10 @@ async function processInvoice() {
         tin: document.getElementById('tin_number').value,
         name: name,
         address: document.getElementById('cust_address').value,
-        seller: cashierInput.value, // ITO ANG VARIABLE PARA SA CONDITION SA APPS SCRIPT
-        total: totalValue,
+        seller: cashierInput.value,
+        total: totalValue.toFixed(2), // Naka-2 decimal places na Total
+        vatable_sales: vatableSales, // Round off to 2 decimal places sa Column Q
+        vat_amount: vatAmount,       // Round off to 2 decimal places sa Column R
         items: cart 
     };
 
@@ -204,16 +232,24 @@ async function processInvoice() {
 
         alert("SUCCESS: Transaction Saved!");
 
-        // I-UNCHECK ANG LAHAT NG CASHIER OPTIONS 
+        await fetchInventory(); 
+
         const cashiers = document.querySelectorAll('input[name="cashier"]');
         cashiers.forEach(radio => {
-            radio.checked = false; // Tatanggalin ang pagkaka-select
+            radio.checked = false;
         });
-
 
         cart = [];
         updateUI();
-        ["si_number", "cust_name", "cust_address", "tin_number"].forEach(id => document.getElementById(id).value = "");
+        
+        // Idinagdag ang "other_deductions" at "manual_discount" sa listahan ng lilinisin
+        ["si_number", "cust_name", "cust_address", "tin_number", "service_fee_input", "other_deductions", "manual_discount"].forEach(id => {
+            const el = document.getElementById(id);
+            if(el) {
+                if(id === "manual_discount" || id === "other_deductions") el.value = "0";
+                else el.value = "";
+            }
+        });
         
     } catch (error) {
         alert("CONNECTION ERROR!");

@@ -91,10 +91,16 @@
                 <div class="total-section">
                     <div class="form-group">
                         <label style="color: #bdc3c7;">Discount (₱)</label>
-                        <input type="number" id="manual_discount" value="0" oninput="updateUI()" style="background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.2); color:white;">
+                        <input type="number" id="manual_discount" value="" oninput="updateUI()" style="background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.2); color:white;">
                     </div>
+
+                    <div class="form-group">
+                        <label style="color: #bdc3c7;">Other Deductions (₱)</label>
+                        <input type="number" id="other_deductions" value="" oninput="updateUI()" style="background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.2); color:white;">
+                    </div>
+
                     <div class="total-row"><span>Subtotal:</span><span id="subtotal-val">₱0.00</span></div>
-                    <div class="total-row" style="color:#f1c40f;"><span>Discount:</span><span id="discount-val">-₱0.00</span></div>
+                    <div class="total-row" style="color:#f1c40f;"><span>Total Deductions:</span><span id="discount-val">-₱0.00</span></div>
 
                     
                     <div class="grand-total" style="font-weight: normal;">

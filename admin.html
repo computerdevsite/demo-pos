@@ -4,208 +4,32 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Panel - Store Management System</title>
+    <link href="css/admin.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        :root {
-            --sidebar-width: 250px;
-            --primary: #1e272e;
-            --success: #05c46b;
-            --danger: #ff3f34;
-            --accent: #3c40c6;
-            --bg-body: #f1f2f6;
-            --text-dark: #2f3542;
-        }
-
-        body {
-            font-family: 'Segoe UI', Roboto, sans-serif;
-            margin: 0;
-            display: flex;
-            background-color: var(--bg-body);
-            height: 100vh;
-        }
-
-        /* SIDEBAR */
-        .sidebar {
-            width: var(--sidebar-width);
-            background-color: var(--primary);
-            color: white;
-            display: flex;
-            flex-direction: column;
-            box-shadow: 4px 0 10px rgba(0,0,0,0.1);
-        }
-
-        .sidebar-brand {
-            padding: 30px 20px;
-            font-size: 1.5rem;
-            font-weight: 800;
-            text-align: center;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-            color: var(--success);
-        }
-
-        .sidebar-menu {
-            flex-grow: 1;
-            padding: 20px 0;
-        }
-
-        .menu-link {
-            padding: 15px 25px;
-            display: flex;
-            align-items: center;
-            color: #d2dae2;
-            text-decoration: none;
-            transition: 0.3s;
-            border-left: 4px solid transparent;
-        }
-
-        .menu-link:hover, .menu-link.active {
-            background: rgba(255,255,255,0.05);
-            color: white;
-            border-left-color: var(--success);
-        }
-
-        .menu-link i { margin-right: 15px; width: 20px; text-align: center; }
-
-        /* MAIN CONTENT */
-        .main-container {
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-            overflow-y: auto;
-        }
-
-        .top-nav {
-            height: 70px;
-            background: white;
-            padding: 0 30px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        }
-
-        .badge-admin {
-            background: #ef5350;
-            color: white;
-            padding: 5px 15px;
-            border-radius: 5px;
+        .filter-input {
+            margin-top: 5px;
+            padding: 4px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
             font-size: 0.75rem;
-            font-weight: bold;
-            text-transform: uppercase;
+            width: 100%;
+            cursor: pointer;
         }
-
-        /* DASHBOARD CONTENT */
-        .content-padding {
-            padding: 30px;
+        .chart-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
         }
-
+        /* Adjusted grid to 3 columns since Low Stock is removed */
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: repeat(3, 1fr);
             gap: 20px;
-            margin-bottom: 30px;
-        }
-
-        .stat-card {
-            background: white;
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.02);
-            display: flex;
-            flex-direction: column;
-        }
-
-        .stat-card .label { color: #808e9b; font-size: 0.85rem; font-weight: bold; margin-bottom: 10px; }
-        .stat-card .value { font-size: 1.8rem; font-weight: bold; color: var(--text-dark); }
-        .stat-card .trend { font-size: 0.8rem; margin-top: 10px; color: var(--success); }
-
-        /* DATA TABLE */
-        .data-section {
-            background: white;
-            border-radius: 12px;
-            padding: 25px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.02);
-        }
-
-        .section-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
             margin-bottom: 20px;
         }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            text-align: center;
-        }
-		
-
-        th {
-            background: #f8f9fa;
-            padding: 15px;
-            font-size: 0.85rem;
-            color: #485460;
-            border-bottom: 2px solid #eee;
-			text-align: center;
-        }
-
-        td {
-            padding: 15px;
-            border-bottom: 1px solid #eee;
-            font-size: 0.9rem;
-            color: var(--text-dark);
-        }
-
-        .stock-tag {
-            padding: 4px 10px;
-            border-radius: 4px;
-            font-size: 0.75rem;
-            font-weight: bold;
-        }
-
-        .in-stock { background: #d2f4ea; color: #05c46b; }
-        .low-stock { background: #fff5d9; color: #ffa801; }
-        .out-of-stock { background: #ffdada; color: #ff3f34; }
-
-        .btn-action {
-            padding: 6px 12px;
-            border: 1px solid #ddd;
-            background: white;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.8rem;
-        }
-
-        .btn-add {
-            background: var(--accent);
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 6px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-		
-		.search-box {
-            flex-grow: 1;
-            padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            font-size: 0.9rem;
-        }
-		
-		.controls-card {
-            background: white;
-            padding: 20px;
-            border-radius: 12px;
-            margin-bottom: 25px;
-            display: flex;
-            gap: 15px;
-            align-items: center;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.02);
-        }
-
-        #sync-status { font-size: 0.8rem; color: var(--success); margin-left: 10px; font-weight: normal; }
     </style>
 </head>
 <body>
@@ -213,7 +37,8 @@
     <div class="sidebar">
         <div class="sidebar-brand">ADMIN PANEL</div>
         <div class="sidebar-menu">
-            <a href="admin.html" class="menu-link active"><i>📊</i> Dashboard Overview</a>
+            <a href="admin.html" class="menu-link active"><i>📊</i> SM MEGAMALL<br>Dashboard Overview</a>
+            <a href="#" class="menu-link"><i>📊</i> SM NORTH EDSA<br>Dashboard Overview</a>
             <a href="stock_management.html" class="menu-link"><i>📦</i> Stock Management</a>
             <a href="#" class="menu-link"><i>📋</i> Inventory Reports</a>
             <a href="index.html" class="menu-link" style="margin-top: auto; color: #ff5e57;"><i>🚪</i> Logout</a>
@@ -222,7 +47,7 @@
 
     <div class="main-container">
         <div class="top-nav">
-            <h3 style="color: var(--text-dark);">Store Analytics <span id="sync-status">Syncing...</span></h3>
+            <h3 style="color: var(--text-dark);">SM MEGAMALL Store Analytics <span id="sync-status">Syncing...</span></h3>
             <div class="admin-profile" style="display: flex; align-items: center; gap: 15px;">
                 <div style="text-align: right;">
                     <div style="font-weight: bold; font-size: 0.9rem;">Administrator</div>
@@ -239,45 +64,48 @@
                     <span class="value" id="stat-total-items">0</span>
                     <span class="trend">Mula sa Sheets</span>
                 </div>
+                
                 <div class="stat-card">
-                    <span class="label">LOW STOCK ITEMS</span>
-                    <span class="value" id="stat-low-stock" style="color: var(--danger);">0</span>
-                    <span class="trend" style="color: var(--danger);">Needs Reorder</span>
-                </div>
-                <div class="stat-card">
-                    <span class="label">TOTAL SALES (TODAY)</span>
-                    <span class="value">₱42,500.00</span>
-                    <span class="trend">▲ 12% vs kahapon</span>
-                </div>
-                <div class="stat-card">
-                    <span class="label">TOTAL REVENUE (MONTH)</span>
-                    <span class="value">₱1.2M</span>
-                    <span class="trend">▲ 5% vs last month</span>
-                </div>
-            </div>
-			
-			<div class="controls-card">
-                <input type="text" id="searchInput" class="search-box" placeholder="Search product name or barcode..." oninput="filterTable()">
+                    <span class="label">SALES BY DATE</span>
+                    <span class="value" id="stat-sales-today">₱0.00</span>
+                    <input type="date" id="date-selector" class="filter-input" onchange="updateStats(allInventoryData, allTransactionData)">
                 </div>
 
+                <div class="stat-card">
+                    <span class="label">SALES BY MONTH</span>
+                    <span class="value" id="stat-sales-month">₱0.00</span>
+                    <input type="month" id="month-selector" class="filter-input" onchange="updateStats(allInventoryData, allTransactionData)">
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <h2 style="margin:0 0 15px 0; font-size: 1rem; color: #2c3e50;">Daily Sales Trend (Last 7 Days)</h2>
+                <canvas id="salesChart" height="100"></canvas>
+            </div>
+            
+            <div class="controls-card">
+                <input type="text" id="searchInput" class="search-box" placeholder="Search transaction ID or customer name..." oninput="filterTable()">
+            </div>
+
             <div class="data-section">
-			
                 <div class="section-header">
-                    <h2 style="margin:0; font-size: 1.2rem;">Live Stock Inventory Overview</h2>
+                    <h2 style="margin:0; font-size: 1.2rem;">Recent Sales Transactions</h2>
                     <button class="btn-add" onclick="window.open('YOUR_GOOGLE_SHEET_URL_HERE', '_blank')">Open Google Sheets</button>
                 </div>
-				
+                
                 <table>
                     <thead>
                         <tr>
-                            <th>Product Name</th>
-                            <th>Barcode</th>
-                            <th>Selling Price</th>
+                            <th>Date</th>
+                            <th>SI Number</th>
+                            <th>Customer Name</th>
+                            <th>Total Amount</th>
+                            <th>Cashier</th>
                         </tr>
                     </thead>
                     <tbody id="inventory-table-body">
                         <tr>
-                            <td colspan="7" style="text-align:center; padding: 50px; color: #888;">Loading inventory data...</td>
+                            <td colspan="5" style="text-align:center; padding: 50px; color: #888;">Loading transaction data...</td>
                         </tr>
                     </tbody>
                 </table>
@@ -286,10 +114,21 @@
     </div>
 
     <script>
-    const SHEETS_URL = "https://script.google.com/macros/s/AKfycbxzfAK0_NU1QGhqDZAzcwNl8aGDApB8qkbNImCQuWVyqDFXfevfiXwHQq83yj_ZWJUh/exec";
+    const SHEETS_URL = "https://script.google.com/macros/s/AKfycbzpArDNWwE8sDpmSX8BFpnBNtBM7EWIYic55PjFMnEpsX8iH7Nm7lWIk76OFZIH85ZW/exec";
     
-    // 1. Dito itatabi ang data para sa searching
     let allInventoryData = []; 
+    let allTransactionData = []; 
+    let salesChart;
+
+    function setDefaultDates() {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        
+        document.getElementById('date-selector').value = `${year}-${month}-${day}`;
+        document.getElementById('month-selector').value = `${year}-${month}`;
+    }
 
     async function fetchInventory() {
         const syncStatus = document.getElementById('sync-status');
@@ -305,11 +144,12 @@
                 return;
             }
 
-            // 2. I-save ang data sa ating variable
-            allInventoryData = data; 
+            allInventoryData = data.inventory || data;
+            allTransactionData = data.transactions || []; 
 
-            renderTable(data);
-            updateStats(data);
+            renderTable(allTransactionData);
+            updateStats(allInventoryData, allTransactionData);
+            updateChart(allTransactionData);
             
             syncStatus.innerText = "● Live (Synced)";
             syncStatus.style.color = "var(--success)";
@@ -317,69 +157,116 @@
         } catch (error) {
             syncStatus.innerText = "Connection Error";
             syncStatus.style.color = "var(--danger)";
-            tableBody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:red;">Failed to load data.</td></tr>`;
+            tableBody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:red;">Failed to load data.</td></tr>`;
         }
-    }
-
-    // 3. BAGONG FUNCTION: Para sa Searching
-    function filterTable() {
-        const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-        
-        // I-filter ang 'allInventoryData' base sa input
-        const filteredData = allInventoryData.filter(item => {
-            const name = (item.name || "").toLowerCase();
-            const barcode = (item.barcode || "").toLowerCase();
-            
-            return name.includes(searchTerm) || barcode.includes(searchTerm);
-        });
-
-        // I-display lang ang mga nag-match
-        renderTable(filteredData);
     }
 
     function renderTable(items) {
         const tableBody = document.getElementById('inventory-table-body');
         let html = "";
-
-        if (items.length === 0) {
-            tableBody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 20px;">No matching products found.</td></tr>`;
+        if (!items || items.length === 0) {
+            tableBody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 20px;">No matching transactions found.</td></tr>`;
             return;
         }
-
-        items.forEach(item => {
-            let statusClass = "in-stock";
-            let statusText = "IN STOCK";
-            
-            // Siguraduhin na number ang stock para sa comparison
-            const stockQty = parseInt(item.stock) || 0;
-
-            if (stockQty <= 0) {
-                statusClass = "out-of-stock";
-                statusText = "OUT OF STOCK";
-            } else if (stockQty <= 20) {
-                statusClass = "low-stock";
-                statusText = "LOW STOCK";
-            }
-
+        items.slice(0, 50).forEach(item => {
             html += `
                 <tr>
-                    <td style="font-weight:600; text-align: left;">${item.name}</td>
-                    <td style="font-family:monospace;">${item.barcode}</td>
-                    <td style="font-weight:bold;">₱${parseFloat(item.price).toFixed(2)}</td>
+                    <td>${item.date}</td>
+                    <td style="font-family:monospace; font-weight:bold;">${item.si}</td>
+                    <td>${item.name}</td>
+                    <td style="font-weight:bold; color: var(--primary);">₱${parseFloat(item.total).toFixed(2)}</td>
+                    <td><span class="badge-admin" style="background:#e1eaf2; color:#2c3e50; font-size:0.7rem;">${item.seller}</span></td>
                 </tr>
             `;
         });
-
         tableBody.innerHTML = html;
     }
 
-    function updateStats(items) {
-        document.getElementById('stat-total-items').innerText = items.length;
-        const lowStockCount = items.filter(i => (parseInt(i.stock) || 0) <= 20).length;
-        document.getElementById('stat-low-stock').innerText = lowStockCount;
+    function updateStats(invItems, transItems) {
+        // Updated: Only Total Items and Sales calculations
+        document.getElementById('stat-total-items').innerText = invItems.length;
+
+        const selectedDateRaw = document.getElementById('date-selector').value;
+        const selectedMonthRaw = document.getElementById('month-selector').value;
+
+        let salesSelectedDay = 0;
+        let salesSelectedMonth = 0;
+
+        transItems.forEach(t => {
+            const tDate = new Date(t.date);
+            const amount = parseFloat(t.total) || 0;
+            const transYear = tDate.getFullYear();
+            const transMonth = String(tDate.getMonth() + 1).padStart(2, '0');
+            const transDay = String(tDate.getDate()).padStart(2, '0');
+            const tFormattedDate = `${transYear}-${transMonth}-${transDay}`;
+            const tFormattedMonth = `${transYear}-${transMonth}`;
+
+            if (tFormattedDate === selectedDateRaw) salesSelectedDay += amount;
+            if (tFormattedMonth === selectedMonthRaw) salesSelectedMonth += amount;
+        });
+
+        document.getElementById('stat-sales-today').innerText = `₱${salesSelectedDay.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+        document.getElementById('stat-sales-month').innerText = `₱${salesSelectedMonth.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
     }
 
-    window.onload = fetchInventory;
+    function updateChart(transItems) {
+        const ctx = document.getElementById('salesChart').getContext('2d');
+        const last7Days = [];
+        const salesData = [];
+
+        for (let i = 6; i >= 0; i--) {
+            const d = new Date();
+            d.setDate(d.getDate() - i);
+            const dateStr = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+            const compareStr = d.toISOString().split('T')[0];
+            last7Days.push(dateStr);
+
+            let dailyTotal = 0;
+            transItems.forEach(t => {
+                const tDateStr = new Date(t.date).toISOString().split('T')[0];
+                if (tDateStr === compareStr) dailyTotal += parseFloat(t.total) || 0;
+            });
+            salesData.push(dailyTotal);
+        }
+
+        if (salesChart) salesChart.destroy();
+
+        salesChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: last7Days,
+                datasets: [{
+                    label: 'Daily Sales (₱)',
+                    data: salesData,
+                    backgroundColor: 'rgba(52, 152, 219, 0.7)',
+                    borderColor: 'rgba(52, 152, 219, 1)',
+                    borderWidth: 1,
+                    borderRadius: 5
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: { beginAtZero: true, ticks: { callback: value => '₱' + value.toLocaleString() } }
+                }
+            }
+        });
+    }
+
+    function filterTable() {
+        const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+        const filteredData = allTransactionData.filter(item => {
+            const name = (item.name || "").toLowerCase();
+            const si = (item.si || "").toLowerCase();
+            return name.includes(searchTerm) || si.includes(searchTerm);
+        });
+        renderTable(filteredData);
+    }
+
+    window.onload = function() {
+        setDefaultDates();
+        fetchInventory();
+    };
 </script>
 </body>
 </html>
