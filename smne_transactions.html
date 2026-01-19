@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Transaction History</title>
+    <link href="css/admin.css" rel="stylesheet">
+    <style>
+        /* Karagdagang style para sa Transaction Table */
+        .transaction-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        /* Dark Table Header para sa Admin Look */
+        table thead th {
+            background-color: #2c3e50 !important;
+            color: white !important;
+            padding: 12px;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+        }
+
+        .status-badge {
+            background: #e1f5fe;
+            color: #039be5;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 0.7rem;
+        }
+
+        /* Sidebar Dropdown Styles */
+        .dropdown-btn { cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+        .dropdown-container { display: none; background-color: rgba(0, 0, 0, 0.1); margin-bottom: 10px; border-radius: 4px; }
+        .dropdown-container a { padding-left: 45px !important; font-size: 0.85rem !important; }
+        .show { display: block; }
+        .rotate { transform: rotate(90deg); }
+        .arrow-icon { transition: transform 0.2s; font-size: 0.7rem; font-style: normal; }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <div class="sidebar-brand">ADMIN PANEL</div>
+        <div class="sidebar-menu">
+            <div class="menu-link dropdown-btn" onclick="toggleDropdown('dash-dropdown', 'arrow-dash')">
+                <span><i>📊</i> Dashboard Overview</span>
+                <i class="arrow-icon" id="arrow-dash">▶</i>
+            </div>
+            <div class="dropdown-container" id="dash-dropdown">
+                <a href="admin.html" class="menu-link active">● SM MEGAMALL</a>
+                <a href="#" class="menu-link">● SM NORTH EDSA</a>
+            </div>
+            
+            <div class="menu-link dropdown-btn" onclick="toggleDropdown('trans-dropdown', 'arrow-trans')">
+                <span><i>💸</i> Transactions</span>
+                <i class="arrow-icon" id="arrow-trans">▶</i>
+            </div>
+            <div class="dropdown-container" id="trans-dropdown">
+                <a href="smmg_transactions.html" class="menu-link">● SM MEGAMALL</a>
+                <a href="#" class="menu-link active">● SM NORTH EDSA</a>
+            </div>
+            
+            <a href="stock_management.html" class="menu-link"><i>📦</i> Stock Management</a>
+            <a href="#" class="menu-link"><i>📋</i> Inventory Reports</a>
+            <a href="index.html" class="menu-link" style="margin-top: auto; color: #ff5e57;"><i>🚪</i> Logout</a>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="top-nav">
+            <h3 style="color: var(--text-dark);">SM NORTH EDSA <span style="font-weight: 400;">| Transaction History</span></h3>
+            <div class="admin-profile" style="display: flex; align-items: center; gap: 15px;">
+                <div id="sync-status" style="font-size: 0.8rem; color: #27ae60; font-weight: bold;">Loading Records...</div>
+                <span class="badge-admin">Admin</span>
+            </div>
+        </div>
+
+        <div class="content-padding">
+            <div class="transaction-card">
+                <div class="section-header" style="margin-bottom: 20px;">
+                    <input type="text" id="txnSearch" class="search-box" style="width: 100%; max-width: 400px;" placeholder="Search SI, Name, or Date..." onkeyup="filterTransactions()">
+                </div>
+
+                <div class="data-section" style="box-shadow: none; padding: 0;">
+                    <table id="txnTable">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>SI Number</th>
+                                <th>TIN</th>
+                                <th>Customer Name</th>
+                                <th>Address</th>
+                                <th>Total Amount</th>
+                                <th>Cashier</th>
+                                <th>Items</th>
+                            </tr>
+                        </thead>
+                        <tbody id="txnBody">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SHEETS_URL = "https://script.google.com/macros/s/AKfycbwoJ_5VDObaBae7N1GjVcEr6H1Mv_gwxvZlPuHWo_RyFCCbOvdq22Oym-G-aJ6p-y8/exec";
+
+        // Sidebar Logic
+        function toggleDropdown(id, arrowId) {
+            const dropdown = document.getElementById(id);
+            const arrow = document.getElementById(arrowId);
+            dropdown.classList.toggle("show");
+            arrow.classList.toggle("rotate");
+        }
+
+        async function loadTransactions() {
+            const status = document.getElementById('sync-status');
+            const tbody = document.getElementById('txnBody');
+            
+            try {
+                const response = await fetch(`${SHEETS_URL}?action=getTransactions`);
+                let rawData = await response.json();
+                rawData.shift(); 
+                
+                tbody.innerHTML = '';
+                if (!rawData || rawData.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;">No records found.</td></tr>';
+                    return;
+                }
+
+                const groups = [];
+                let currentGroup = null;
+
+                rawData.forEach(r => {
+                    const siInRow = String(r[1] || "").trim();
+                    if (siInRow !== "") {
+                        if (currentGroup) groups.push(currentGroup);
+                        
+                        let cashierName = "---";
+                        if (r[5] || r[10]) cashierName = "ARENAS";
+                        else if (r[6] || r[11]) cashierName = "CLIMACO";
+                        else if (r[7] || r[12]) cashierName = "KING KING";
+                        else if (r[8] || r[13]) cashierName = "BUEMIO";
+                        else if (r[9] || r[14]) cashierName = "BROZO";
+
+                        currentGroup = {
+                            main: {
+                                date: r[0] ? new Date(r[0]).toLocaleDateString() : "---",
+                                si: siInRow,
+                                tin: r[2] || "---",
+                                name: r[3] || "---",
+                                address: r[4] || "---",
+                                total: r[15] ? '₱' + parseFloat(r[15]).toLocaleString(undefined, {minimumFractionDigits: 2}) : "₱0.00",
+                                cashier: cashierName,
+                                barcode: r[18] || "---",
+                                itemName: r[19] || "---"
+                            },
+                            subItems: []
+                        };
+                    } else if (currentGroup && (r[18] || r[19])) {
+                        currentGroup.subItems.push({
+                            barcode: r[18] || "---",
+                            itemName: r[19] || "---"
+                        });
+                    }
+                });
+                if (currentGroup) groups.push(currentGroup);
+
+                let useAltColor = false;
+                groups.reverse().forEach(group => {
+                    useAltColor = !useAltColor;
+                    const groupBg = useAltColor ? "#f8f9fa" : "#ffffff";
+
+                    const mainTr = document.createElement('tr');
+                    mainTr.style.backgroundColor = groupBg;
+                    mainTr.style.borderTop = "2px solid #3498db"; 
+                    
+                    mainTr.innerHTML = `
+                        <td style="font-weight:600;">${group.main.date}</td>
+                        <td style="font-weight:bold; color:#e67e22;">${group.main.si}</td>
+                        <td>${group.main.tin}</td>
+                        <td style="font-weight:600;">${group.main.name}</td>
+                        <td>${group.main.address}</td>
+                        <td style="font-weight:bold; color: #27ae60;">${group.main.total}</td>
+                        <td><span class="status-badge">${group.main.cashier}</span></td>
+                        <td>
+                            <div style="font-weight:600;">${group.main.itemName}</div>
+                            <div style="font-size:0.7rem; color:#888;">Code: ${group.main.barcode}</div>
+                        </td>
+                    `;
+                    tbody.appendChild(mainTr);
+
+                    group.subItems.forEach(sub => {
+                        const subTr = document.createElement('tr');
+                        subTr.style.backgroundColor = groupBg;
+                        subTr.innerHTML = `
+                            <td colspan="7" style="border:none;"></td> 
+                            <td style="border-top: 1px dashed #ddd;">
+                                <div style="font-weight:600; color:#555;">${sub.itemName}</div>
+                                <div style="font-size:0.7rem; color:#888;">Code: ${sub.barcode}</div>
+                            </td>
+                        `;
+                        tbody.appendChild(subTr);
+                    });
+                });
+
+                status.innerText = "● Live (Synced)";
+            } catch (error) {
+                status.innerText = "Error syncing data.";
+                console.error(error);
+            }
+        }
+
+        function filterTransactions() {
+            const input = document.getElementById("txnSearch").value.toUpperCase();
+            const rows = document.getElementById("txnBody").getElementsByTagName("tr");
+            let currentGroupRows = [];
+            let groupVisible = false;
+
+            for (let i = 0; i < rows.length; i++) {
+                if (rows[i].style.borderTop && rows[i].style.borderTop.includes("solid")) {
+                    if (currentGroupRows.length > 0) applyVisibility(currentGroupRows, groupVisible);
+                    currentGroupRows = [rows[i]];
+                    groupVisible = rows[i].innerText.toUpperCase().includes(input);
+                } else {
+                    currentGroupRows.push(rows[i]);
+                    if (rows[i].innerText.toUpperCase().includes(input)) groupVisible = true;
+                }
+            }
+            if (currentGroupRows.length > 0) applyVisibility(currentGroupRows, groupVisible);
+        }
+
+        function applyVisibility(rows, isVisible) {
+            rows.forEach(row => row.style.display = isVisible ? "" : "none");
+        }
+
+        window.onload = loadTransactions;
+		
+		
+    </script>
+</body>
+</html>
