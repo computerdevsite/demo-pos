@@ -58,6 +58,17 @@
             font-size: 0.7rem;
             font-style: normal;
         }
+
+        /* --- NOTIFICATION BADGE STYLE --- */
+        .sidebar-badge {
+            background: #ff3f34;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.7rem;
+            margin-left: 5px;
+            display: none; /* Tago muna habang 0 */
+        }
     </style>
 </head>
 <body>
@@ -65,13 +76,22 @@
     <div class="sidebar">
         <div class="sidebar-brand">ADMIN PANEL</div>
         <div class="sidebar-menu">
-            <div class="menu-link dropdown-btn" onclick="toggleDropdown('dash-dropdown', 'arrow-dash')">
+            <div class="menu-link dropdown-btn active" onclick="toggleDropdown('dash-dropdown', 'arrow-dash')">
                 <span><i>📊</i> Dashboard Overview</span>
                 <i class="arrow-icon" id="arrow-dash">▶</i>
             </div>
             <div class="dropdown-container" id="dash-dropdown">
                 <a href="admin.html" class="menu-link active">● SM MEGAMALL</a>
                 <a href="admin_smne.html" class="menu-link">● SM NORTH EDSA</a>
+            </div>
+            
+            <div class="menu-link dropdown-btn" onclick="toggleDropdown('pending-dropdown', 'arrow-pending')">
+                <span><i>✅</i> Pending Approvals <span class="sidebar-badge" id="main-pending-badge">0</span></span>
+                <i class="arrow-icon" id="arrow-pending">▶</i>
+            </div>
+            <div class="dropdown-container" id="pending-dropdown">
+                <a href="pending.html" class="menu-link">● SM MEGAMALL <span class="sidebar-badge" id="smmg-pending-badge">0</span></a>
+                <a href="pending_smne.html" class="menu-link">● SM NORTH EDSA</a>
             </div>
             
             <div class="menu-link dropdown-btn" onclick="toggleDropdown('trans-dropdown', 'arrow-trans')">
@@ -158,12 +178,12 @@
 
     <script>
     const SHEETS_URL = "https://script.google.com/macros/s/AKfycbzpArDNWwE8sDpmSX8BFpnBNtBM7EWIYic55PjFMnEpsX8iH7Nm7lWIk76OFZIH85ZW/exec";
+    const PENDING_API_URL = "https://script.google.com/macros/s/AKfycbzY8_i2U7WRe7Z6Dm4dVv0-L26QbnSW4gQETNPATCthogPIpAomKiSXVaRZbgsH7opx/exec";
     
     let allInventoryData = []; 
     let allTransactionData = []; 
     let salesChart;
 
-    // --- SIDEBAR DROPDOWN LOGIC (Improved for Multiple Dropdowns) ---
     function toggleDropdown(id, arrowId) {
         const dropdown = document.getElementById(id);
         const arrow = document.getElementById(arrowId);
@@ -198,10 +218,37 @@
             updateChart(allTransactionData);
             syncStatus.innerText = "● Live (Synced)";
             syncStatus.style.color = "var(--success)";
+            
+            // Check for pending counts after inventory load
+            checkPendingCount();
         } catch (error) {
             syncStatus.innerText = "Connection Error";
             syncStatus.style.color = "var(--danger)";
             tableBody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:red;">Failed to load data.</td></tr>`;
+        }
+    }
+
+    async function checkPendingCount() {
+        try {
+            const response = await fetch(`${PENDING_API_URL}?action=getAdminData`);
+            const data = await response.json();
+            const pendingItems = data.approvals ? data.approvals.filter(item => item.status === "PENDING") : [];
+            const count = pendingItems.length;
+
+            const mainBadge = document.getElementById('main-pending-badge');
+            const smmgBadge = document.getElementById('smmg-pending-badge');
+
+            if (count > 0) {
+                mainBadge.innerText = count;
+                mainBadge.style.display = "inline-block";
+                smmgBadge.innerText = count;
+                smmgBadge.style.display = "inline-block";
+            } else {
+                mainBadge.style.display = "none";
+                smmgBadge.style.display = "none";
+            }
+        } catch (e) {
+            console.log("Pending check failed");
         }
     }
 
@@ -291,9 +338,11 @@
     window.onload = function() {
         setDefaultDates();
         fetchInventory();
-        // Default: Open Dashboard dropdown
         document.getElementById("dash-dropdown").classList.add("show");
         document.getElementById("arrow-dash").classList.add("rotate");
+        
+        // Auto check pending every 2 minutes
+        setInterval(checkPendingCount, 120000);
     };
 </script>
 </body>

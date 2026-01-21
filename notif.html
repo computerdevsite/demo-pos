@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <base target="_top">
+    <style>
+        body { font-family: 'Segoe UI', Arial, sans-serif; text-align: center; background: #f4f4f4; padding: 20px; }
+        .card { background: white; padding: 15px; margin: 10px auto; width: 90%; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border-left: 6px solid #d9534f; text-align: left; }
+        .header { color: #d9534f; font-weight: bold; font-size: 24px; }
+        #email-status { font-size: 12px; color: #777; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <div class="header">📋 STOCK DELIVERY MONITOR</div>
+    <div id="email-status">System Standby...</div>
+    <div id="status">Connecting to Database...</div>
+    <div id="list"></div>
+
+    <form id="autoEmailForm" action="https://formsubmit.co/ronaldbrozo055@gmail.com" method="POST" style="display:none;">
+        <input type="hidden" name="_subject" value="🚨 BAGONG PENDING STOCK ALERT!">
+        <input type="hidden" name="_captcha" value="false">
+        <input type="hidden" id="form-content" name="message" value="">
+    </form>
+
+    <script>
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzY8_i2U7WRe7Z6Dm4dVv0-L26QbnSW4gQETNPATCthogPIpAomKiSXVaRZbgsH7opx/exec";
+        let lastCount = 0; // Para hindi paulit-ulit ang email kung pareho pa rin ang data
+
+        function checkUpdates() {
+            fetch(WEB_APP_URL)
+            .then(res => res.json())
+            .then(data => {
+                const pending = data.approvals.filter(item => item.status === "PENDING");
+                const statusDiv = document.getElementById('status');
+                const listDiv = document.getElementById('list');
+                const emailStatus = document.getElementById('email-status');
+                
+                if (pending.length > 0) {
+                    statusDiv.innerHTML = `🚨 <b>${pending.length} ITEMS FOR APPROVAL</b>`;
+                    
+                    let messageBody = "May bagong pending stocks:\n\n";
+                    listDiv.innerHTML = pending.map(item => {
+                        messageBody += `- ${item.name} (${item.barcode}) - ₱${item.price}\n`;
+                        return `<div class="card"><b>Item:</b> ${item.name}<br><b>Barcode:</b> ${item.barcode} | ₱${item.price}</div>`;
+                    }).join('');
+
+                    // KUNG MAY BAGONG ITEM (Dagdagan ang count), MAG-AUTO SUBMIT NG FORM
+                    if (pending.length > lastCount) {
+                        document.getElementById('form-content').value = messageBody;
+                        emailStatus.innerHTML = "📧 Sending Email Notification...";
+                        
+                        // I-submit ang form gamit ang AJAX para hindi mag-refresh ang page
+                        const formData = new FormData(document.getElementById('autoEmailForm'));
+                        fetch("https://formsubmit.co/ajax/ronaldbrozo055@gmail.com", {
+                            method: "POST",
+                            body: formData
+                        }).then(() => {
+                            emailStatus.innerHTML = "✅ Email Sent to Admin!";
+                            lastCount = pending.length; // I-update ang count para stop muna ang email
+                        });
+                    }
+                } else {
+                    statusDiv.innerHTML = `<span style="color:#5cb85c">✅ No pending requests.</span>`;
+                    listDiv.innerHTML = "";
+                    emailStatus.innerHTML = "System Idle";
+                    lastCount = 0;
+                }
+            });
+        }
+
+        setInterval(checkUpdates, 20000); // Check bawat 20 seconds
+        checkUpdates();
+    </script>
+</body>
+</html>

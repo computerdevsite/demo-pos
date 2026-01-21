@@ -66,6 +66,46 @@
 
         .menu-link i { margin-right: 15px; width: 20px; text-align: center; }
 
+        /* --- SIDEBAR DROPDOWN STYLES --- */
+        .dropdown-btn {
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .dropdown-container {
+            display: none;
+            background-color: rgba(0, 0, 0, 0.1);
+            margin-bottom: 10px;
+            border-radius: 4px;
+        }
+        .dropdown-container a {
+            padding-left: 45px !important;
+            font-size: 0.85rem !important;
+        }
+        .show {
+            display: block;
+        }
+        .rotate {
+            transform: rotate(90deg);
+        }
+        .arrow-icon {
+            transition: transform 0.2s;
+            font-size: 0.7rem;
+            font-style: normal;
+        }
+
+        /* --- NOTIFICATION BADGE STYLE --- */
+        .sidebar-badge {
+            background: #ff3f34;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.7rem;
+            margin-left: 10px;
+            display: none; /* Tago muna habang 0 */
+        }
+
         /* MAIN CONTENT */
         .main-container {
             flex-grow: 1;
@@ -183,7 +223,33 @@
     <div class="sidebar">
         <div class="sidebar-brand">ADMIN PANEL</div>
         <div class="sidebar-menu">
-            <a href="admin.html" class="menu-link"><i>📊</i> Dashboard Overview</a>
+            <div class="menu-link dropdown-btn" onclick="toggleDropdown('dash-dropdown', 'arrow-dash')">
+                <span><i>📊</i> Dashboard Overview</span>
+                <i class="arrow-icon" id="arrow-dash">▶</i>
+            </div>
+            <div class="dropdown-container" id="dash-dropdown">
+                <a href="admin.html" class="menu-link">● SM MEGAMALL</a>
+                <a href="admin_smne.html" class="menu-link">● SM NORTH EDSA</a>
+            </div>
+            
+            <div class="menu-link dropdown-btn" onclick="toggleDropdown('pending-dropdown', 'arrow-pending')">
+                <span><i>✅</i> Pending Approvals <span class="sidebar-badge" id="main-pending-badge">0</span></span>
+                <i class="arrow-icon" id="arrow-pending">▶</i>
+            </div>
+            <div class="dropdown-container" id="pending-dropdown">
+                <a href="pending.html" class="menu-link">● SM MEGAMALL <span class="sidebar-badge" id="smmg-pending-badge">0</span></a>
+                <a href="pending_smne.html" class="menu-link">● SM NORTH EDSA</a>
+            </div>
+            
+            <div class="menu-link dropdown-btn" onclick="toggleDropdown('trans-dropdown', 'arrow-trans')">
+                <span><i>💸</i> Transactions</span>
+                <i class="arrow-icon" id="arrow-trans">▶</i>
+            </div>
+            <div class="dropdown-container" id="trans-dropdown">
+                <a href="smmg_transactions.html" class="menu-link">● SM MEGAMALL</a>
+                <a href="#" class="menu-link">● SM NORTH EDSA</a>
+            </div>
+            
             <a href="stock_management.html" class="menu-link active"><i>📦</i> Stock Management</a>
             <a href="#" class="menu-link"><i>📋</i> Inventory Reports</a>
             <a href="index.html" class="menu-link" style="margin-top: auto; color: #ff5e57;"><i>🚪</i> Logout</a>
@@ -213,7 +279,7 @@
                 </select>
                 <button class="btn-action" style="background: var(--accent); color: white; border: none; padding: 12px 20px;" onclick="fetchStockData()">Refresh</button>
             </div>
-			
+            
 
             <div class="data-section">
                 <table>
@@ -235,9 +301,17 @@
     </div>
 
     <script>
-    // Gamit ang ?action=summary para makuha ang tamang sheet
     const SHEETS_URL = "https://script.google.com/macros/s/AKfycbz8BC14a1Y97AXLzmv0lLO52Nl2-FNqAqOPwEsqCoUn3lCfL_zRtw_-NjaSn924Vgi3/exec?action=summary";
+    const PENDING_API_URL = "https://script.google.com/macros/s/AKfycbzY8_i2U7WRe7Z6Dm4dVv0-L26QbnSW4gQETNPATCthogPIpAomKiSXVaRZbgsH7opx/exec";
     let localStockData = [];
+
+    // --- SIDEBAR DROPDOWN LOGIC ---
+    function toggleDropdown(id, arrowId) {
+        const dropdown = document.getElementById(id);
+        const arrow = document.getElementById(arrowId);
+        dropdown.classList.toggle("show");
+        arrow.classList.toggle("rotate");
+    }
 
     async function fetchStockData() {
         const status = document.getElementById('sync-status');
@@ -248,9 +322,36 @@
             renderTable(data);
             status.innerText = "● Live (Synced)";
             status.style.color = "var(--success)";
+            
+            // Check for pending count after stock load
+            checkPendingCount();
         } catch (e) {
             status.innerText = "● Connection Error";
             status.style.color = "var(--danger)";
+        }
+    }
+
+    async function checkPendingCount() {
+        try {
+            const response = await fetch(`${PENDING_API_URL}?action=getAdminData`);
+            const data = await response.json();
+            const pendingItems = data.approvals ? data.approvals.filter(item => item.status === "PENDING") : [];
+            const count = pendingItems.length;
+
+            const mainBadge = document.getElementById('main-pending-badge');
+            const smmgBadge = document.getElementById('smmg-pending-badge');
+
+            if (count > 0) {
+                mainBadge.innerText = count;
+                mainBadge.style.display = "inline-block";
+                smmgBadge.innerText = count;
+                smmgBadge.style.display = "inline-block";
+            } else {
+                mainBadge.style.display = "none";
+                smmgBadge.style.display = "none";
+            }
+        } catch (e) {
+            console.log("Pending badge sync failed");
         }
     }
 
@@ -259,7 +360,6 @@
         let html = "";
 
         items.forEach(item => {
-            // BINAGO: 'quantity' na ang gamit natin sa App Script
             const qty = parseInt(item.quantity) || 0; 
             let tagClass = "good";
             let tagText = "HEALTHY";
@@ -284,7 +384,6 @@
         const filter = document.getElementById('statusFilter').value;
 
         const filtered = localStockData.filter(item => {
-            // BINAGO: item_name ang ginamit sa search
             const matchesSearch = item.item_name.toLowerCase().includes(search);
             const qty = parseInt(item.quantity) || 0; 
             let matchesStatus = true;
@@ -298,7 +397,11 @@
         renderTable(filtered);
     }
 
-    window.onload = fetchStockData;
+    window.onload = function() {
+        fetchStockData();
+        // Auto update badges every 2 minutes
+        setInterval(checkPendingCount, 120000);
+    };
 </script>
 </body>
 </html>

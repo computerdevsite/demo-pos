@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pending Approvals - Admin System</title>
+    <link href="css/admin.css" rel="stylesheet">
+    <style>
+        /* Theme consistency */
+        .approval-container { padding: 25px; }
+        .data-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        
+        .header-flex { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        
+        .status-pill { padding: 5px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; }
+        .pending { background: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
+        
+        .btn-approve-all { background: #27ae60; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        .btn-approve-all:hover { background: #219150; transform: translateY(-2px); }
+        .btn-approve-all:disabled { background: #ccc; cursor: not-allowed; }
+
+        .barcode-font { font-family: 'Courier New', Courier, monospace; font-weight: bold; color: #2c3e50; }
+        
+        /* Empty state style */
+        .empty-state { text-align: center; padding: 50px; color: #95a5a6; }
+        .empty-state i { font-size: 3rem; display: block; margin-bottom: 10px; }
+
+        #sync-status { font-size: 0.8rem; margin-left: 10px; }
+
+        /* --- SIDEBAR DROPDOWN STYLES --- */
+        .dropdown-btn { cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+        .dropdown-container { display: none; background-color: rgba(0, 0, 0, 0.1); margin-bottom: 10px; border-radius: 4px; }
+        .dropdown-container a { padding-left: 45px !important; font-size: 0.85rem !important; }
+        .show { display: block; }
+        .rotate { transform: rotate(90deg); }
+        .arrow-icon { transition: transform 0.2s; font-size: 0.7rem; font-style: normal; }
+
+        /* --- NOTIFICATION BADGE STYLE --- */
+        .sidebar-badge {
+            background: #ff3f34;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.7rem;
+            margin-left: 5px;
+            display: none; /* Hidden by default */
+        }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <div class="sidebar-brand">ADMIN PANEL</div>
+        <div class="sidebar-menu">
+            <div class="menu-link dropdown-btn" onclick="toggleDropdown('dash-dropdown', 'arrow-dash')">
+                <span><i>📊</i> Dashboard Overview</span>
+                <i class="arrow-icon" id="arrow-dash">▶</i>
+            </div>
+            <div class="dropdown-container" id="dash-dropdown">
+                <a href="admin.html" class="menu-link">● SM MEGAMALL</a>
+                <a href="admin_smne.html" class="menu-link">● SM NORTH EDSA</a>
+            </div>
+            
+            <div class="menu-link dropdown-btn active" onclick="toggleDropdown('pending-dropdown', 'arrow-pending')">
+                <span><i>✅</i> Pending Approvals <span class="sidebar-badge" id="main-badge">0</span></span>
+                <i class="arrow-icon rotate" id="arrow-pending">▶</i>
+            </div>
+            <div class="dropdown-container show" id="pending-dropdown">
+                <a href="pending.html" class="menu-link active">● SM MEGAMALL <span class="sidebar-badge" id="smmg-badge">0</span></a>
+                <a href="pending_smne.html" class="menu-link">● SM NORTH EDSA</a>
+            </div>
+            
+            <div class="menu-link dropdown-btn" onclick="toggleDropdown('trans-dropdown', 'arrow-trans')">
+                <span><i>💸</i> Transactions</span>
+                <i class="arrow-icon" id="arrow-trans">▶</i>
+            </div>
+            <div class="dropdown-container" id="trans-dropdown">
+                <a href="smmg_transactions.html" class="menu-link">● SM MEGAMALL</a>
+                <a href="#" class="menu-link">● SM NORTH EDSA</a>
+            </div>
+            
+            <a href="stock_management.html" class="menu-link"><i>📦</i> Stock Management</a>
+            <a href="#" class="menu-link"><i>📋</i> Inventory Reports</a>
+            <a href="index.html" class="menu-link" style="margin-top: auto; color: #ff5e57;"><i>🚪</i> Logout</a>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="top-nav">
+            <h3 style="color: var(--text-dark);">Stock In Approval <span id="sync-status">Checking...</span></h3>
+            <div class="admin-profile" style="display: flex; align-items: center; gap: 15px;">
+                <span class="badge-admin">Megamall Branch</span>
+            </div>
+        </div>
+
+        <div class="approval-container">
+            <div class="header-flex">
+                <div>
+                    <h2 style="margin:0;">Pending Stocks Queue (<span id="count-display">0</span>)</h2>
+                    <p style="color: #7f8c8d; margin: 5px 0 0 0;">Review and approve new items before they enter the inventory.</p>
+                </div>
+                <button class="btn-approve-all" id="btnApprove" onclick="approveAll()">
+                    🚀 APPROVE ALL PENDING
+                </button>
+            </div>
+
+            <div class="data-card">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date Received</th>
+                            <th>Barcode / Serial</th>
+                            <th>Item Description</th>
+                            <th>Unit Price</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="approval-table-body">
+                    </tbody>
+                </table>
+                <div id="loading-state" class="empty-state">
+                    <i>⏳</i> Loading pending requests...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzY8_i2U7WRe7Z6Dm4dVv0-L26QbnSW4gQETNPATCthogPIpAomKiSXVaRZbgsH7opx/exec";
+
+        function toggleDropdown(id, arrowId) {
+            const dropdown = document.getElementById(id);
+            const arrow = document.getElementById(arrowId);
+            dropdown.classList.toggle("show");
+            arrow.classList.toggle("rotate");
+        }
+
+        async function loadPendingStocks() {
+            const tableBody = document.getElementById('approval-table-body');
+            const loadingState = document.getElementById('loading-state');
+            const syncStatus = document.getElementById('sync-status');
+            const mainBadge = document.getElementById('main-badge');
+            const smmgBadge = document.getElementById('smmg-badge');
+            const countDisplay = document.getElementById('count-display');
+
+            try {
+                const response = await fetch(`${WEB_APP_URL}?action=getAdminData`);
+                const data = await response.json();
+                
+                const pendingItems = data.approvals ? data.approvals.filter(item => item.status === "PENDING") : [];
+
+                loadingState.style.display = 'none';
+                syncStatus.innerText = "● Live";
+                syncStatus.style.color = "#27ae60";
+
+                // Update Badges
+                const count = pendingItems.length;
+                countDisplay.innerText = count;
+                
+                if (count > 0) {
+                    mainBadge.innerText = count;
+                    mainBadge.style.display = "inline-block";
+                    smmgBadge.innerText = count;
+                    smmgBadge.style.display = "inline-block";
+                } else {
+                    mainBadge.style.display = "none";
+                    smmgBadge.style.display = "none";
+                }
+
+                if (count === 0) {
+                    tableBody.innerHTML = "";
+                    loadingState.innerHTML = "<i>✅</i> Lahat ng stocks ay approved na. Magaling!";
+                    loadingState.style.display = 'block';
+                    document.getElementById('btnApprove').disabled = true;
+                    return;
+                }
+
+                document.getElementById('btnApprove').disabled = false;
+                let html = "";
+                pendingItems.forEach(item => {
+                    html += `
+                        <tr>
+                            <td>${new Date().toLocaleDateString()}</td>
+                            <td class="barcode-font">${item.barcode}</td>
+                            <td>${item.name}</td>
+                            <td style="font-weight:bold;">₱${parseFloat(item.price).toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                            <td><span class="status-pill pending">PENDING</span></td>
+                        </tr>
+                    `;
+                });
+                tableBody.innerHTML = html;
+
+            } catch (error) {
+                syncStatus.innerText = "Offline";
+                syncStatus.style.color = "red";
+                loadingState.innerHTML = "<i>❌</i> Error loading data. Please refresh.";
+            }
+        }
+
+        async function approveAll() {
+            if (!confirm("Sigurado ka bang i-approve ang lahat ng items sa listahan?")) return;
+
+            const btn = document.getElementById('btnApprove');
+            btn.disabled = true;
+            btn.innerText = "PROCESSING APPROVALS...";
+
+            try {
+                await fetch(WEB_APP_URL + "?action=approveAll", { 
+                    method: 'POST',
+                    mode: 'no-cors' 
+                });
+
+                alert("Stocks successfully approved and moved to Inventory!");
+                loadPendingStocks();
+            } catch (error) {
+                alert("Approval failed. Please try again.");
+                btn.disabled = false;
+                btn.innerText = "🚀 APPROVE ALL PENDING";
+            }
+        }
+
+        // Auto-refresh badge every 60 seconds
+        setInterval(loadPendingStocks, 60000);
+
+        window.onload = loadPendingStocks;
+    </script>
+</body>
+</html>

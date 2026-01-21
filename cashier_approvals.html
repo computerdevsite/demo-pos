@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SM MEGAMALL - My Pending Deliveries</title>
+    <link href="css/pos.css" rel="stylesheet">
+    <style>
+        .status-tracker { padding: 20px; }
+        .data-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); color: #333; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th { text-align: left; padding: 12px; border-bottom: 2px solid #eee; color: white; }
+        td { padding: 12px; border-bottom: 1px solid #eee; }
+		
+        .status-pill { padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; }
+        .pending { background: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
+        
+        .sync-box { display: flex; align-items: center; gap: 10px; font-size: 0.8rem; margin-bottom: 15px; color: #666; }
+        .dot { height: 8px; width: 8px; border-radius: 50%; display: inline-block; background: #ccc; }
+        .dot.online { background: #27ae60; animation: blink 1s infinite; }
+
+        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <div class="sidebar-header">SM MEGAMALL</div>
+        <div class="sidebar-menu">
+            <a href="POS.html" class="menu-item"><i>🛒</i> Point of Sale</a>
+            <a href="transactions.html" class="menu-item"><i>📜</i> Transactions</a>
+            <a href="delivery.html" class="menu-item"><i>🚚</i> Stock Delivery</a>
+            <a href="cashier_approvals.html" class="menu-item active"><i>⏳</i> My Pending Stocks</a>
+            <a href="stocks.html" class="menu-item"><i>📦</i> Check Stocks</a>
+            <a href="index.html" class="menu-item" style="margin-top: auto;"><i>🚪</i> Logout</a>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="top-bar">
+            <div style="font-weight: 600; color: var(--primary);">STOCK APPROVAL TRACKER</div>
+            <div class="cashier-info">
+                <span id="active-user" style="font-size: 0.9rem; font-weight: 500;">Active User</span>
+                <span class="badge-cashier">CASHIER ROLE</span>
+            </div>
+        </div>
+
+        <div class="status-tracker">
+            <div class="sync-box">
+                <span id="sync-dot" class="dot"></span>
+                <span id="sync-text">Checking server...</span>
+            </div>
+
+            <div class="data-card">
+                <h3 style="margin-top:0;">Items Awaiting Admin Approval</h3>
+                <p style="font-size: 0.85rem; color: #666;">Note: Kapag na-approve na ng admin, kusang mawawala ang items dito at mapupunta sa official Inventory.</p>
+                
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Barcode</th>
+                            <th>Description</th>
+                            <th>Unit Price</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cashier-approval-table">
+                        </tbody>
+                </table>
+                <div id="loading-msg" style="text-align:center; padding: 40px; color: #999;">
+                    Loading your scanned items...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Gamitin ang parehong URL ng iyong Apps Script
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzY8_i2U7WRe7Z6Dm4dVv0-L26QbnSW4gQETNPATCthogPIpAomKiSXVaRZbgsH7opx/exec";
+
+        async function fetchMyApprovals() {
+            const tableBody = document.getElementById('cashier-approval-table');
+            const loadingMsg = document.getElementById('loading-msg');
+            const syncDot = document.getElementById('sync-dot');
+            const syncText = document.getElementById('sync-text');
+
+            try {
+                const response = await fetch(`${WEB_APP_URL}?action=getAdminData`);
+                const data = await response.json();
+                
+                // I-filter lang ang "PENDING" at ipakita sa cashier
+                const myPending = data.approvals ? data.approvals.filter(item => item.status === "PENDING") : [];
+
+                syncDot.className = "dot online";
+                syncText.innerText = "System Synced";
+                loadingMsg.style.display = 'none';
+
+                if (myPending.length === 0) {
+                    tableBody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:30px;">Yehey! No pending stocks. Lahat ay approved na.</td></tr>`;
+                    return;
+                }
+
+                let html = "";
+                myPending.forEach(item => {
+                    html += `
+                        <tr>
+                            <td style="font-family: monospace; font-weight: bold;">${item.barcode}</td>
+                            <td>${item.name}</td>
+                            <td>₱${parseFloat(item.price).toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                            <td><span class="status-pill pending">Awaiting Approval</span></td>
+                        </tr>
+                    `;
+                });
+                tableBody.innerHTML = html;
+
+            } catch (error) {
+                syncDot.className = "dot";
+                syncText.innerText = "Connection Error";
+                loadingMsg.innerText = "Cannot connect to database.";
+            }
+        }
+
+        // Auto refresh every 30 seconds para updated si cashier
+        setInterval(fetchMyApprovals, 30000);
+        window.onload = fetchMyApprovals;
+    </script>
+</body>
+</html>
