@@ -29,7 +29,8 @@
             <a href="POS.html" class="menu-item"><i>🛒</i> Point of Sale</a>
             <a href="transactions.html" class="menu-item"><i>📜</i> Transactions</a>
             <a href="delivery.html" class="menu-item active"><i>🚚</i> Stock Delivery</a>
-			<a href="cashier_approvals.html" class="menu-item"><i>⏳</i> My Pending Stocks</a>
+            <a href="pullout.html" class="menu-item"><i>📤</i> Stock Pull Out</a>
+            <a href="cashier_approvals.html" class="menu-item"><i>⏳</i> My Pending Stocks</a>
             <a href="stocks.html" class="menu-item"><i>📦</i> Check Stocks</a>
             <a href="index.html" class="menu-item" style="margin-top: auto;"><i>🚪</i> Logout</a>
         </div>
@@ -105,14 +106,14 @@
     </div>
 
     <script>
-        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxY97itwzB_KRE4SOqSbNRh-m90LHk8PVStIcXnbSDVNnUOR5_-w1Ko63JCh66G4fyf/exec";
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwwkcQnmXYG_E3Z9rJGyZ9dlluJ9nPFs9GeWZt211ZyEbN0wxHf9MFjXRE6NLh0fh0t/exec";
 
         let inventoryMaster = []; 
         let deliveryBatch = []; 
 
         window.onload = function() {
             document.getElementById('sync-status').innerText = "Updating Inventory List...";
-            fetch(WEB_APP_URL + "?action=getInventory")
+            fetch(WEB_APP_URL + "?action=getAdminData")
                 .then(res => res.json())
                 .then(data => {
                     inventoryMaster = data.inventory || data; 
@@ -126,15 +127,15 @@
 
         function loadDatalist() {
             const list = document.getElementById('inventory-data');
-            const uniqueNames = [...new Set(inventoryMaster.map(item => item.name || item[1]))];
+            const uniqueNames = [...new Set(inventoryMaster.map(item => item.name))];
             list.innerHTML = uniqueNames.map(name => `<option value="${name}">`).join('');
         }
 
         function autoFillPrice() {
             const name = document.getElementById('dr_name').value;
-            const match = inventoryMaster.find(i => (i.name || i[1]) === name);
+            const match = inventoryMaster.find(i => i.name === name);
             if (match) {
-                document.getElementById('dr_price').value = match.price || match[2];
+                document.getElementById('dr_price').value = match.price;
             }
         }
 
@@ -156,7 +157,15 @@
                     if (exists) {
                         alert("Barcode na-scan na!");
                     } else {
-                        deliveryBatch.unshift({ name: name, barcode: barcode, qty: 1, price: price });
+                        // Idinagdag ang action detail para sa Google Sheets processing
+                        deliveryBatch.unshift({ 
+                            name: name, 
+                            barcode: barcode, 
+                            qty: 1, 
+                            price: price,
+                            note: "[STOCK-IN]",
+                            remarks: "DELIVERY" 
+                        });
                         renderTable();
                     }
                     document.getElementById('dr_barcode').value = ""; 
@@ -177,7 +186,7 @@
                 <tr class="item-row">
                     <td>${item.name}</td>
                     <td><span class="barcode-tag">${item.barcode}</span></td>
-                    <td class="price-tag">₱${item.price.toLocaleString()}</td>
+                    <td class="price-tag">₱${item.price.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
                     <td style="text-align:center;">1</td>
                     <td style="text-align:right;">
                         <button onclick="removeLine(${index})" style="color:#ff7675; background:none; border:none; cursor:pointer; font-size:1.1rem;">✕</button>
@@ -204,7 +213,7 @@
             
             const btn = document.querySelector('.btn-upload');
             btn.disabled = true;
-            btn.innerText = "SENDING & NOTIFYING ADMIN..."; // Edited loading text
+            btn.innerText = "SENDING TO APPROVAL...";
 
             fetch(WEB_APP_URL, {
                 method: "POST",
@@ -212,7 +221,7 @@
                 body: JSON.stringify(deliveryBatch)
             })
             .then(() => {
-                alert("Naisend na sa Admin at may Email notification na ipinadala! Hintayin ang approval bago mabenta.");
+                alert("Naisend na sa Admin Approval! Hintayin na ma-approve bago ito lumabas sa Inventory.");
                 deliveryBatch = [];
                 renderTable();
                 btn.disabled = false;

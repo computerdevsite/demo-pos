@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Stock Management - Store Management System</title>
+    <link href="css/admin.css" rel="stylesheet">
     <style>
         :root {
             --sidebar-width: 250px;
@@ -24,7 +25,7 @@
             height: 100vh;
         }
 
-        /* SIDEBAR (Exact match with Admin) */
+        /* SIDEBAR - Clean No-Dropdown Style */
         .sidebar {
             width: var(--sidebar-width);
             background-color: var(--primary);
@@ -66,44 +67,14 @@
 
         .menu-link i { margin-right: 15px; width: 20px; text-align: center; }
 
-        /* --- SIDEBAR DROPDOWN STYLES --- */
-        .dropdown-btn {
-            cursor: pointer;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .dropdown-container {
-            display: none;
-            background-color: rgba(0, 0, 0, 0.1);
-            margin-bottom: 10px;
-            border-radius: 4px;
-        }
-        .dropdown-container a {
-            padding-left: 45px !important;
-            font-size: 0.85rem !important;
-        }
-        .show {
-            display: block;
-        }
-        .rotate {
-            transform: rotate(90deg);
-        }
-        .arrow-icon {
-            transition: transform 0.2s;
-            font-size: 0.7rem;
-            font-style: normal;
-        }
-
-        /* --- NOTIFICATION BADGE STYLE --- */
         .sidebar-badge {
             background: #ff3f34;
             color: white;
             padding: 2px 8px;
             border-radius: 10px;
             font-size: 0.7rem;
-            margin-left: 10px;
-            display: none; /* Tago muna habang 0 */
+            margin-left: auto;
+            display: none;
         }
 
         /* MAIN CONTENT */
@@ -122,6 +93,19 @@
             align-items: center;
             justify-content: space-between;
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        /* Branch Selector Style */
+        .store-dropdown {
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid #dcdde1;
+            background-color: white;
+            font-weight: bold;
+            color: #2f3640;
+            cursor: pointer;
+            font-size: 0.9rem;
+            margin-left: 10px;
         }
 
         .badge-admin {
@@ -184,6 +168,7 @@
             font-size: 0.85rem;
             color: #485460;
             border-bottom: 2px solid #eee;
+            text-transform: uppercase;
         }
 
         td {
@@ -213,9 +198,11 @@
             border-radius: 4px;
             cursor: pointer;
             font-size: 0.8rem;
+            transition: 0.2s;
         }
+        .btn-action:hover { background: #f1f2f6; }
 
-        #sync-status { font-size: 0.8rem; color: var(--success); font-weight: normal; }
+        #sync-status { font-size: 0.8rem; margin-left: 10px; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -223,33 +210,11 @@
     <div class="sidebar">
         <div class="sidebar-brand">ADMIN PANEL</div>
         <div class="sidebar-menu">
-            <div class="menu-link dropdown-btn" onclick="toggleDropdown('dash-dropdown', 'arrow-dash')">
-                <span><i>📊</i> Dashboard Overview</span>
-                <i class="arrow-icon" id="arrow-dash">▶</i>
-            </div>
-            <div class="dropdown-container" id="dash-dropdown">
-                <a href="admin.html" class="menu-link">● SM MEGAMALL</a>
-                <a href="admin_smne.html" class="menu-link">● SM NORTH EDSA</a>
-            </div>
-            
-            <div class="menu-link dropdown-btn" onclick="toggleDropdown('pending-dropdown', 'arrow-pending')">
-                <span><i>✅</i> Pending Approvals <span class="sidebar-badge" id="main-pending-badge">0</span></span>
-                <i class="arrow-icon" id="arrow-pending">▶</i>
-            </div>
-            <div class="dropdown-container" id="pending-dropdown">
-                <a href="pending.html" class="menu-link">● SM MEGAMALL <span class="sidebar-badge" id="smmg-pending-badge">0</span></a>
-                <a href="pending_smne.html" class="menu-link">● SM NORTH EDSA</a>
-            </div>
-            
-            <div class="menu-link dropdown-btn" onclick="toggleDropdown('trans-dropdown', 'arrow-trans')">
-                <span><i>💸</i> Transactions</span>
-                <i class="arrow-icon" id="arrow-trans">▶</i>
-            </div>
-            <div class="dropdown-container" id="trans-dropdown">
-                <a href="smmg_transactions.html" class="menu-link">● SM MEGAMALL</a>
-                <a href="#" class="menu-link">● SM NORTH EDSA</a>
-            </div>
-            
+            <a href="admin.html" class="menu-link"><i>📊</i> Dashboard</a>
+            <a href="pending.html" class="menu-link">
+                <i>✅</i> Pending Approvals <span class="sidebar-badge" id="main-badge">0</span>
+            </a>
+            <a href="smmg_transactions.html" class="menu-link"><i>💸</i> Transactions</a>
             <a href="stock_management.html" class="menu-link active"><i>📦</i> Stock Management</a>
             <a href="#" class="menu-link"><i>📋</i> Inventory Reports</a>
             <a href="index.html" class="menu-link" style="margin-top: auto; color: #ff5e57;"><i>🚪</i> Logout</a>
@@ -258,13 +223,17 @@
 
     <div class="main-container">
         <div class="top-nav">
-            <h3 style="color: var(--text-dark); margin:0;">Stock Management <span id="sync-status">● Syncing...</span></h3>
+            <div style="display: flex; align-items: center;">
+                <h3 style="color: var(--text-dark); margin: 0;">Inventory:</h3>
+                <select id="branch-selector" class="store-dropdown" onchange="changeBranch()">
+                    <option value="MEGAMALL" selected>SM MEGAMALL</option>
+                    <option value="NORTH_EDSA">SM NORTH EDSA</option>
+                </select>
+                <span id="sync-status" style="color: var(--success);">● Syncing...</span>
+            </div>
+            
             <div class="admin-profile" style="display: flex; align-items: center; gap: 15px;">
-                <div style="text-align: right;">
-                    <div style="font-weight: bold; font-size: 0.9rem;">Administrator</div>
-                    <div style="font-size: 0.75rem; color: #808e9b;">Super User Access</div>
-                </div>
-                <span class="badge-admin">Admin</span>
+                <span class="badge-admin" id="branch-label">Megamall Branch</span>
             </div>
         </div>
 
@@ -277,9 +246,8 @@
                     <option value="warning">Low Stock (11-30)</option>
                     <option value="good">Healthy (30+)</option>
                 </select>
-                <button class="btn-action" style="background: var(--accent); color: white; border: none; padding: 12px 20px;" onclick="fetchStockData()">Refresh</button>
+                <button class="btn-action" style="background: var(--accent); color: white; border: none; padding: 12px 20px;" onclick="fetchStockData()">Refresh Data</button>
             </div>
-            
 
             <div class="data-section">
                 <table>
@@ -288,12 +256,12 @@
                             <th>Product Name</th>
                             <th>Category</th>
                             <th>Current Stock</th>
-                            <th>Status</th>
+                            <th>Status Condition</th>
                             <th>Action</th>
                         </tr>
                     </thead>
                     <tbody id="stock-body">
-                        <tr><td colspan="6" style="text-align:center; padding: 50px; color: #888;">Fetching live stock levels...</td></tr>
+                        <tr><td colspan="5" style="text-align:center; padding: 50px; color: #888;">Fetching live stock levels...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -301,33 +269,49 @@
     </div>
 
     <script>
-    const SHEETS_URL = "https://script.google.com/macros/s/AKfycbz8BC14a1Y97AXLzmv0lLO52Nl2-FNqAqOPwEsqCoUn3lCfL_zRtw_-NjaSn924Vgi3/exec?action=summary";
+    // CONFIGURATION
+    const BRANCH_CONFIG = {
+            'MEGAMALL': {
+                url: "https://script.google.com/macros/s/AKfycbwwkcQnmXYG_E3Z9rJGyZ9dlluJ9nPFs9GeWZt211ZyEbN0wxHf9MFjXRE6NLh0fh0t/exec",
+                label: "Megamall Branch"
+            },
+            'NORTH_EDSA': {
+                url: "https://script.google.com/macros/s/AKfycbxKnZHePSbSMqf1G_lcnF867kEL6Idq6yNEBWiu2XtklhljQlCnloSshXHXNoHY6wUi/exec",
+                label: "North Edsa Branch"
+            }
+        };
+
+
     const PENDING_API_URL = "https://script.google.com/macros/s/AKfycbzY8_i2U7WRe7Z6Dm4dVv0-L26QbnSW4gQETNPATCthogPIpAomKiSXVaRZbgsH7opx/exec";
     let localStockData = [];
 
-    // --- SIDEBAR DROPDOWN LOGIC ---
-    function toggleDropdown(id, arrowId) {
-        const dropdown = document.getElementById(id);
-        const arrow = document.getElementById(arrowId);
-        dropdown.classList.toggle("show");
-        arrow.classList.toggle("rotate");
+    function changeBranch() {
+        const branch = document.getElementById('branch-selector').value;
+        document.getElementById('branch-label').innerText = BRANCH_CONFIG[branch].label;
+        document.getElementById('stock-body').innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 50px;">🔄 Switching branch inventory...</td></tr>';
+        fetchStockData();
     }
 
     async function fetchStockData() {
+        const branch = document.getElementById('branch-selector').value;
+        const SHEETS_URL = BRANCH_CONFIG[branch].url;
         const status = document.getElementById('sync-status');
+        
         try {
-            const response = await fetch(SHEETS_URL);
+            const response = await fetch(SHEETS_URL + "?action=summary");
             const data = await response.json();
-            localStockData = data;
-            renderTable(data);
-            status.innerText = "● Live (Synced)";
-            status.style.color = "var(--success)";
             
-            // Check for pending count after stock load
+            // Suportahan kung Array agad ang response o may .inventory property
+            localStockData = Array.isArray(data) ? data : (data.inventory || []);
+            
+            renderTable(localStockData);
+            status.innerText = "● Connected";
+            status.style.color = "var(--success)";
             checkPendingCount();
         } catch (e) {
             status.innerText = "● Connection Error";
             status.style.color = "var(--danger)";
+            document.getElementById('stock-body').innerHTML = '<tr><td colspan="5" style="text-align:center; color:red;">Error loading data. Check API URL.</td></tr>';
         }
     }
 
@@ -335,32 +319,32 @@
         try {
             const response = await fetch(`${PENDING_API_URL}?action=getAdminData`);
             const data = await response.json();
-            const pendingItems = data.approvals ? data.approvals.filter(item => item.status === "PENDING") : [];
-            const count = pendingItems.length;
-
-            const mainBadge = document.getElementById('main-pending-badge');
-            const smmgBadge = document.getElementById('smmg-pending-badge');
-
-            if (count > 0) {
-                mainBadge.innerText = count;
-                mainBadge.style.display = "inline-block";
-                smmgBadge.innerText = count;
-                smmgBadge.style.display = "inline-block";
-            } else {
-                mainBadge.style.display = "none";
-                smmgBadge.style.display = "none";
+            const count = data.approvals ? data.approvals.filter(item => item.status === "PENDING").length : 0;
+            const badge = document.getElementById('main-badge');
+            if (badge) {
+                if (count > 0) {
+                    badge.innerText = count;
+                    badge.style.display = "inline-block";
+                } else {
+                    badge.style.display = "none";
+                }
             }
-        } catch (e) {
-            console.log("Pending badge sync failed");
-        }
+        } catch (e) { console.log("Badge sync failed"); }
     }
 
     function renderTable(items) {
         const tbody = document.getElementById('stock-body');
         let html = "";
 
+        if (!items || items.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No items found.</td></tr>';
+            return;
+        }
+
         items.forEach(item => {
-            const qty = parseInt(item.quantity) || 0; 
+            const name = item.item_name || item.name || "Unknown Item";
+            const qty = parseInt(item.quantity || item.stock) || 0; 
+            
             let tagClass = "good";
             let tagText = "HEALTHY";
 
@@ -369,14 +353,15 @@
 
             html += `
                 <tr>
-                    <td style="font-weight:600;">${item.item_name}</td> <td>${item.category || 'General'}</td>
+                    <td style="font-weight:600;">${name}</td> 
+                    <td>${item.category || 'General'}</td>
                     <td class="stock-qty">${qty} pcs</td>
                     <td><span class="stock-tag ${tagClass}">${tagText}</span></td>
-                    <td><button class="btn-action" onclick="window.open('YOUR_SHEET_URL', '_blank')">Adjust</button></td>
+                    <td><button class="btn-action" onclick="alert('Adjustment feature for ${name}')">Adjust</button></td>
                 </tr>
             `;
         });
-        tbody.innerHTML = html || '<tr><td colspan="6" style="text-align:center;">No items found.</td></tr>';
+        tbody.innerHTML = html;
     }
 
     function filterTable() {
@@ -384,8 +369,9 @@
         const filter = document.getElementById('statusFilter').value;
 
         const filtered = localStockData.filter(item => {
-            const matchesSearch = item.item_name.toLowerCase().includes(search);
-            const qty = parseInt(item.quantity) || 0; 
+            const name = (item.item_name || item.name || "").toLowerCase();
+            const matchesSearch = name.includes(search);
+            const qty = parseInt(item.quantity || item.stock) || 0; 
             let matchesStatus = true;
 
             if (filter === 'critical') matchesStatus = qty <= 10;
@@ -397,11 +383,7 @@
         renderTable(filtered);
     }
 
-    window.onload = function() {
-        fetchStockData();
-        // Auto update badges every 2 minutes
-        setInterval(checkPendingCount, 120000);
-    };
+    window.onload = fetchStockData;
 </script>
 </body>
 </html>

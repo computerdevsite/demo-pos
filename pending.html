@@ -6,36 +6,53 @@
     <title>Pending Approvals - Admin System</title>
     <link href="css/admin.css" rel="stylesheet">
     <style>
-        /* Theme consistency */
         .approval-container { padding: 25px; }
         .data-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
-        
         .header-flex { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         
         .status-pill { padding: 5px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; }
         .pending { background: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
         
+        /* New Style for Type Labels */
+        .note-pill { padding: 4px 10px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; margin-right: 5px; }
+        .note-stockin { background: #e3f2fd; color: #1976d2; border: 1px solid #bbdefb; }
+        .note-pullout { background: #fdeaea; color: #c62828; border: 1px solid #ffcdd2; }
+
         .btn-approve-all { background: #27ae60; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.3s; }
         .btn-approve-all:hover { background: #219150; transform: translateY(-2px); }
         .btn-approve-all:disabled { background: #ccc; cursor: not-allowed; }
 
+        /* Style para sa Reject Button */
+        .btn-reject { 
+            background: #eb4d4b; 
+            color: white; 
+            border: none; 
+            padding: 6px 10px; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            font-size: 0.7rem; 
+            font-weight: bold;
+            transition: 0.2s;
+        }
+        .btn-reject:hover { background: #ff7979; }
+
         .barcode-font { font-family: 'Courier New', Courier, monospace; font-weight: bold; color: #2c3e50; }
-        
-        /* Empty state style */
         .empty-state { text-align: center; padding: 50px; color: #95a5a6; }
         .empty-state i { font-size: 3rem; display: block; margin-bottom: 10px; }
 
-        #sync-status { font-size: 0.8rem; margin-left: 10px; }
+        /* Selector Style */
+        .store-dropdown {
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid #dcdde1;
+            background-color: white;
+            font-weight: bold;
+            color: #2f3640;
+            cursor: pointer;
+            font-size: 0.9rem;
+            margin-left: 10px;
+        }
 
-        /* --- SIDEBAR DROPDOWN STYLES --- */
-        .dropdown-btn { cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
-        .dropdown-container { display: none; background-color: rgba(0, 0, 0, 0.1); margin-bottom: 10px; border-radius: 4px; }
-        .dropdown-container a { padding-left: 45px !important; font-size: 0.85rem !important; }
-        .show { display: block; }
-        .rotate { transform: rotate(90deg); }
-        .arrow-icon { transition: transform 0.2s; font-size: 0.7rem; font-style: normal; }
-
-        /* --- NOTIFICATION BADGE STYLE --- */
         .sidebar-badge {
             background: #ff3f34;
             color: white;
@@ -43,7 +60,7 @@
             border-radius: 10px;
             font-size: 0.7rem;
             margin-left: 5px;
-            display: none; /* Hidden by default */
+            display: none;
         }
     </style>
 </head>
@@ -52,33 +69,11 @@
     <div class="sidebar">
         <div class="sidebar-brand">ADMIN PANEL</div>
         <div class="sidebar-menu">
-            <div class="menu-link dropdown-btn" onclick="toggleDropdown('dash-dropdown', 'arrow-dash')">
-                <span><i>📊</i> Dashboard Overview</span>
-                <i class="arrow-icon" id="arrow-dash">▶</i>
-            </div>
-            <div class="dropdown-container" id="dash-dropdown">
-                <a href="admin.html" class="menu-link">● SM MEGAMALL</a>
-                <a href="admin_smne.html" class="menu-link">● SM NORTH EDSA</a>
-            </div>
-            
-            <div class="menu-link dropdown-btn active" onclick="toggleDropdown('pending-dropdown', 'arrow-pending')">
-                <span><i>✅</i> Pending Approvals <span class="sidebar-badge" id="main-badge">0</span></span>
-                <i class="arrow-icon rotate" id="arrow-pending">▶</i>
-            </div>
-            <div class="dropdown-container show" id="pending-dropdown">
-                <a href="pending.html" class="menu-link active">● SM MEGAMALL <span class="sidebar-badge" id="smmg-badge">0</span></a>
-                <a href="pending_smne.html" class="menu-link">● SM NORTH EDSA</a>
-            </div>
-            
-            <div class="menu-link dropdown-btn" onclick="toggleDropdown('trans-dropdown', 'arrow-trans')">
-                <span><i>💸</i> Transactions</span>
-                <i class="arrow-icon" id="arrow-trans">▶</i>
-            </div>
-            <div class="dropdown-container" id="trans-dropdown">
-                <a href="smmg_transactions.html" class="menu-link">● SM MEGAMALL</a>
-                <a href="#" class="menu-link">● SM NORTH EDSA</a>
-            </div>
-            
+            <a href="admin.html" class="menu-link"><i>📊</i> Dashboard</a>
+            <a href="pending.html" class="menu-link active">
+                <i>✅</i> Pending Approvals <span class="sidebar-badge" id="main-badge">0</span>
+            </a>
+            <a href="smmg_transactions.html" class="menu-link"><i>💸</i> Transactions</a>
             <a href="stock_management.html" class="menu-link"><i>📦</i> Stock Management</a>
             <a href="#" class="menu-link"><i>📋</i> Inventory Reports</a>
             <a href="index.html" class="menu-link" style="margin-top: auto; color: #ff5e57;"><i>🚪</i> Logout</a>
@@ -87,9 +82,16 @@
 
     <div class="main-container">
         <div class="top-nav">
-            <h3 style="color: var(--text-dark);">Stock In Approval <span id="sync-status">Checking...</span></h3>
-            <div class="admin-profile" style="display: flex; align-items: center; gap: 15px;">
-                <span class="badge-admin">Megamall Branch</span>
+            <div style="display: flex; align-items: center;">
+                <h3 style="color: var(--text-dark); margin: 0;">Stock In Approval:</h3>
+                <select id="branch-selector" class="store-dropdown" onchange="changeBranch()">
+                    <option value="MEGAMALL" selected>SM MEGAMALL</option>
+                    <option value="NORTH_EDSA">SM NORTH EDSA</option>
+                </select>
+                <span id="sync-status" style="font-size: 0.8rem; margin-left: 10px;">Checking...</span>
+            </div>
+            <div class="admin-profile">
+                <span class="badge-admin" id="branch-label">Megamall Branch</span>
             </div>
         </div>
 
@@ -97,7 +99,7 @@
             <div class="header-flex">
                 <div>
                     <h2 style="margin:0;">Pending Stocks Queue (<span id="count-display">0</span>)</h2>
-                    <p style="color: #7f8c8d; margin: 5px 0 0 0;">Review and approve new items before they enter the inventory.</p>
+                    <p style="color: #7f8c8d; margin: 5px 0 0 0;">Review and approve new items for this branch.</p>
                 </div>
                 <button class="btn-approve-all" id="btnApprove" onclick="approveAll()">
                     🚀 APPROVE ALL PENDING
@@ -108,11 +110,13 @@
                 <table>
                     <thead>
                         <tr>
+                            <th>Type</th>
                             <th>Date Received</th>
                             <th>Barcode / Serial</th>
                             <th>Item Description</th>
                             <th>Unit Price</th>
                             <th>Status</th>
+                            <th>Action</th>
                         </tr>
                     </thead>
                     <tbody id="approval-table-body">
@@ -126,50 +130,52 @@
     </div>
 
     <script>
-        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzY8_i2U7WRe7Z6Dm4dVv0-L26QbnSW4gQETNPATCthogPIpAomKiSXVaRZbgsH7opx/exec";
+        // CONFIGURATION
+    const BRANCH_CONFIG = {
+            'MEGAMALL': {
+                url: "https://script.google.com/macros/s/AKfycbwwkcQnmXYG_E3Z9rJGyZ9dlluJ9nPFs9GeWZt211ZyEbN0wxHf9MFjXRE6NLh0fh0t/exec",
+                label: "Megamall Branch"
+            },
+            'NORTH_EDSA': {
+                url: "https://script.google.com/macros/s/AKfycbxKnZHePSbSMqf1G_lcnF867kEL6Idq6yNEBWiu2XtklhljQlCnloSshXHXNoHY6wUi/exec",
+                label: "North Edsa Branch"
+            }
+        };
 
-        function toggleDropdown(id, arrowId) {
-            const dropdown = document.getElementById(id);
-            const arrow = document.getElementById(arrowId);
-            dropdown.classList.toggle("show");
-            arrow.classList.toggle("rotate");
+
+        function changeBranch() {
+            document.getElementById('branch-label').innerText = BRANCH_CONFIG[document.getElementById('branch-selector').value].label;
+            document.getElementById('approval-table-body').innerHTML = "";
+            document.getElementById('loading-state').style.display = 'block';
+            loadPendingStocks();
         }
 
         async function loadPendingStocks() {
+            const branch = document.getElementById('branch-selector').value;
+            const config = BRANCH_CONFIG[branch];
             const tableBody = document.getElementById('approval-table-body');
             const loadingState = document.getElementById('loading-state');
             const syncStatus = document.getElementById('sync-status');
             const mainBadge = document.getElementById('main-badge');
-            const smmgBadge = document.getElementById('smmg-badge');
             const countDisplay = document.getElementById('count-display');
 
             try {
-                const response = await fetch(`${WEB_APP_URL}?action=getAdminData`);
+                const response = await fetch(`${config.url}?action=getAdminData`);
                 const data = await response.json();
-                
                 const pendingItems = data.approvals ? data.approvals.filter(item => item.status === "PENDING") : [];
 
                 loadingState.style.display = 'none';
-                syncStatus.innerText = "● Live";
+                syncStatus.innerText = `● ${branch} Live`;
                 syncStatus.style.color = "#27ae60";
 
-                // Update Badges
                 const count = pendingItems.length;
                 countDisplay.innerText = count;
-                
-                if (count > 0) {
-                    mainBadge.innerText = count;
-                    mainBadge.style.display = "inline-block";
-                    smmgBadge.innerText = count;
-                    smmgBadge.style.display = "inline-block";
-                } else {
-                    mainBadge.style.display = "none";
-                    smmgBadge.style.display = "none";
-                }
+                mainBadge.innerText = count;
+                mainBadge.style.display = count > 0 ? "inline-block" : "none";
 
                 if (count === 0) {
                     tableBody.innerHTML = "";
-                    loadingState.innerHTML = "<i>✅</i> Lahat ng stocks ay approved na. Magaling!";
+                    loadingState.innerHTML = "<i>✅</i> Walang pending para sa branch na ito.";
                     loadingState.style.display = 'block';
                     document.getElementById('btnApprove').disabled = true;
                     return;
@@ -178,50 +184,68 @@
                 document.getElementById('btnApprove').disabled = false;
                 let html = "";
                 pendingItems.forEach(item => {
-                    html += `
-                        <tr>
-                            <td>${new Date().toLocaleDateString()}</td>
-                            <td class="barcode-font">${item.barcode}</td>
-                            <td>${item.name}</td>
-                            <td style="font-weight:bold;">₱${parseFloat(item.price).toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
-                            <td><span class="status-pill pending">PENDING</span></td>
-                        </tr>
-                    `;
+                    const typeLabel = item.note || "[STOCK-IN]";
+                    const noteClass = typeLabel.toUpperCase().includes("PULLOUT") ? "note-pullout" : "note-stockin";
+
+                    html += `<tr>
+                        <td><span class="note-pill ${noteClass}">${typeLabel}</span></td>
+                        <td>${new Date().toLocaleDateString()}</td>
+                        <td class="barcode-font">${item.barcode}</td>
+                        <td>${item.name}</td>
+                        <td style="font-weight:bold;">₱${parseFloat(item.price).toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                        <td><span class="status-pill pending">PENDING</span></td>
+                        <td>
+                            <button class="btn-reject" onclick="rejectItem('${item.barcode}')">✖ REJECT</button>
+                        </td>
+                    </tr>`;
                 });
                 tableBody.innerHTML = html;
 
             } catch (error) {
                 syncStatus.innerText = "Offline";
                 syncStatus.style.color = "red";
-                loadingState.innerHTML = "<i>❌</i> Error loading data. Please refresh.";
+                loadingState.innerHTML = "<i>❌</i> Error loading data.";
             }
         }
 
         async function approveAll() {
-            if (!confirm("Sigurado ka bang i-approve ang lahat ng items sa listahan?")) return;
+            const branch = document.getElementById('branch-selector').value;
+            if (!confirm(`I-approve ang lahat ng items sa ${branch}?`)) return;
 
             const btn = document.getElementById('btnApprove');
             btn.disabled = true;
-            btn.innerText = "PROCESSING APPROVALS...";
+            btn.innerText = "PROCESSING...";
 
             try {
-                await fetch(WEB_APP_URL + "?action=approveAll", { 
-                    method: 'POST',
-                    mode: 'no-cors' 
-                });
-
-                alert("Stocks successfully approved and moved to Inventory!");
+                await fetch(BRANCH_CONFIG[branch].url + "?action=approveAll", { method: 'POST', mode: 'no-cors' });
+                alert("Approved successfully!");
                 loadPendingStocks();
             } catch (error) {
-                alert("Approval failed. Please try again.");
+                alert("Failed to approve.");
                 btn.disabled = false;
                 btn.innerText = "🚀 APPROVE ALL PENDING";
             }
         }
 
-        // Auto-refresh badge every 60 seconds
-        setInterval(loadPendingStocks, 60000);
+        // BAGONG FUNCTION PARA SA INDIVIDUAL REJECTION
+        async function rejectItem(barcode) {
+            const branch = document.getElementById('branch-selector').value;
+            if (!confirm(`Sigurado ka bang i-REJECT ang barcode: ${barcode}? Mawawala ito sa listahan.`)) return;
 
+            try {
+                // Ipinapadala ang barcode at action sa server
+                await fetch(`${BRANCH_CONFIG[branch].url}?action=rejectItem&barcode=${barcode}`, { 
+                    method: 'POST', 
+                    mode: 'no-cors' 
+                });
+                alert("Item Rejected.");
+                loadPendingStocks(); // Refresh table
+            } catch (error) {
+                alert("Failed to reject item.");
+            }
+        }
+
+        setInterval(loadPendingStocks, 60000);
         window.onload = loadPendingStocks;
     </script>
 </body>

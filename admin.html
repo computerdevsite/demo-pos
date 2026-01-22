@@ -7,6 +7,29 @@
     <link href="css/admin.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
+        /* --- NEW STORE SELECTOR STYLES --- */
+        .header-with-selector {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .store-dropdown {
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid #dcdde1;
+            background-color: white;
+            font-weight: bold;
+            color: #2f3640;
+            cursor: pointer;
+            outline: none;
+            font-size: 0.9rem;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        .store-dropdown:focus {
+            border-color: #3498db;
+        }
+
+        /* --- PREVIOUS STYLES --- */
         .filter-input {
             margin-top: 5px;
             padding: 4px;
@@ -29,37 +52,6 @@
             gap: 20px;
             margin-bottom: 20px;
         }
-
-        /* --- SIDEBAR DROPDOWN STYLES --- */
-        .dropdown-btn {
-            cursor: pointer;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .dropdown-container {
-            display: none;
-            background-color: rgba(0, 0, 0, 0.1);
-            margin-bottom: 10px;
-            border-radius: 4px;
-        }
-        .dropdown-container a {
-            padding-left: 45px !important;
-            font-size: 0.85rem !important;
-        }
-        .show {
-            display: block;
-        }
-        .rotate {
-            transform: rotate(90deg);
-        }
-        .arrow-icon {
-            transition: transform 0.2s;
-            font-size: 0.7rem;
-            font-style: normal;
-        }
-
-        /* --- NOTIFICATION BADGE STYLE --- */
         .sidebar-badge {
             background: #ff3f34;
             color: white;
@@ -67,7 +59,7 @@
             border-radius: 10px;
             font-size: 0.7rem;
             margin-left: 5px;
-            display: none; /* Tago muna habang 0 */
+            display: none;
         }
     </style>
 </head>
@@ -76,33 +68,11 @@
     <div class="sidebar">
         <div class="sidebar-brand">ADMIN PANEL</div>
         <div class="sidebar-menu">
-            <div class="menu-link dropdown-btn active" onclick="toggleDropdown('dash-dropdown', 'arrow-dash')">
-                <span><i>📊</i> Dashboard Overview</span>
-                <i class="arrow-icon" id="arrow-dash">▶</i>
-            </div>
-            <div class="dropdown-container" id="dash-dropdown">
-                <a href="admin.html" class="menu-link active">● SM MEGAMALL</a>
-                <a href="admin_smne.html" class="menu-link">● SM NORTH EDSA</a>
-            </div>
-            
-            <div class="menu-link dropdown-btn" onclick="toggleDropdown('pending-dropdown', 'arrow-pending')">
-                <span><i>✅</i> Pending Approvals <span class="sidebar-badge" id="main-pending-badge">0</span></span>
-                <i class="arrow-icon" id="arrow-pending">▶</i>
-            </div>
-            <div class="dropdown-container" id="pending-dropdown">
-                <a href="pending.html" class="menu-link">● SM MEGAMALL <span class="sidebar-badge" id="smmg-pending-badge">0</span></a>
-                <a href="pending_smne.html" class="menu-link">● SM NORTH EDSA</a>
-            </div>
-            
-            <div class="menu-link dropdown-btn" onclick="toggleDropdown('trans-dropdown', 'arrow-trans')">
-                <span><i>💸</i> Transactions</span>
-                <i class="arrow-icon" id="arrow-trans">▶</i>
-            </div>
-            <div class="dropdown-container" id="trans-dropdown">
-                <a href="smmg_transactions.html" class="menu-link">● SM MEGAMALL</a>
-                <a href="#" class="menu-link">● SM NORTH EDSA</a>
-            </div>
-            
+            <a href="admin.html" class="menu-link active"><i>📊</i> Dashboard</a>
+            <a href="pending.html" class="menu-link">
+                <i>✅</i> Pending Approvals <span class="sidebar-badge" id="main-pending-badge">0</span>
+            </a>
+            <a href="smmg_transactions.html" class="menu-link"><i>💸</i> Transactions</a>
             <a href="stock_management.html" class="menu-link"><i>📦</i> Stock Management</a>
             <a href="#" class="menu-link"><i>📋</i> Inventory Reports</a>
             <a href="index.html" class="menu-link" style="margin-top: auto; color: #ff5e57;"><i>🚪</i> Logout</a>
@@ -111,7 +81,15 @@
 
     <div class="main-container">
         <div class="top-nav">
-            <h3 style="color: var(--text-dark);">SM MEGAMALL Store Analytics <span id="sync-status">Syncing...</span></h3>
+            <div class="header-with-selector">
+                <h3 style="color: var(--text-dark); margin: 0;">Store Analytics:</h3>
+                <select id="branch-selector" class="store-dropdown" onchange="changeBranch()">
+                    <option value="MEGAMALL" selected>SM MEGAMALL</option>
+                    <option value="NORTH_EDSA">SM NORTH EDSA</option>
+                </select>
+                <span id="sync-status" style="font-size: 0.8rem; margin-left: 10px;">Syncing...</span>
+            </div>
+
             <div class="admin-profile" style="display: flex; align-items: center; gap: 15px;">
                 <div style="text-align: right;">
                     <div style="font-weight: bold; font-size: 0.9rem;">Administrator</div>
@@ -153,8 +131,8 @@
 
             <div class="data-section">
                 <div class="section-header">
-                    <h2 style="margin:0; font-size: 1.2rem;">Recent Sales Transactions</h2>
-                    <button class="btn-add" onclick="window.open('YOUR_GOOGLE_SHEET_URL_HERE', '_blank')">Open Google Sheets</button>
+                    <h2 id="table-title" style="margin:0; font-size: 1.2rem;">Recent Sales: SM MEGAMALL</h2>
+                    <button class="btn-add" onclick="openSheet()">Open Google Sheets</button>
                 </div>
                 
                 <table>
@@ -177,18 +155,63 @@
     </div>
 
     <script>
-    const SHEETS_URL = "https://script.google.com/macros/s/AKfycbzpArDNWwE8sDpmSX8BFpnBNtBM7EWIYic55PjFMnEpsX8iH7Nm7lWIk76OFZIH85ZW/exec";
+    // CONFIGURATION
+    const BRANCH_CONFIG = {
+            'MEGAMALL': {
+                url: "https://script.google.com/macros/s/AKfycbwwkcQnmXYG_E3Z9rJGyZ9dlluJ9nPFs9GeWZt211ZyEbN0wxHf9MFjXRE6NLh0fh0t/exec",
+                label: "Megamall Branch"
+            },
+            'NORTH_EDSA': {
+                url: "https://script.google.com/macros/s/AKfycbxKnZHePSbSMqf1G_lcnF867kEL6Idq6yNEBWiu2XtklhljQlCnloSshXHXNoHY6wUi/exec",
+                label: "North Edsa Branch"
+            }
+        };
+
     const PENDING_API_URL = "https://script.google.com/macros/s/AKfycbzY8_i2U7WRe7Z6Dm4dVv0-L26QbnSW4gQETNPATCthogPIpAomKiSXVaRZbgsH7opx/exec";
     
     let allInventoryData = []; 
     let allTransactionData = []; 
     let salesChart;
 
-    function toggleDropdown(id, arrowId) {
-        const dropdown = document.getElementById(id);
-        const arrow = document.getElementById(arrowId);
-        dropdown.classList.toggle("show");
-        arrow.classList.toggle("rotate");
+    function changeBranch() {
+        const selectedBranch = document.getElementById('branch-selector').value;
+        document.getElementById('table-title').innerText = `Recent Sales: SM ${selectedBranch.replace('_', ' ')}`;
+        
+        document.getElementById('inventory-table-body').innerHTML = `<tr><td colspan="4" style="text-align:center; padding: 50px; color: #888;">Loading ${selectedBranch} data...</td></tr>`;
+        
+        fetchInventory(); 
+    }
+
+    function openSheet() {
+        const branch = document.getElementById('branch-selector').value;
+        window.open(BRANCH_CONFIG[branch].sheetUrl, '_blank');
+    }
+
+    async function fetchInventory() {
+        const branch = document.getElementById('branch-selector').value;
+        const syncStatus = document.getElementById('sync-status');
+        const apiURL = BRANCH_CONFIG[branch].url;
+
+        syncStatus.innerText = "Syncing " + branch + "...";
+
+        try {
+            const response = await fetch(apiURL);
+            const data = await response.json();
+            
+            allInventoryData = data.inventory || data;
+            allTransactionData = data.transactions || []; 
+            
+            renderTable(allTransactionData);
+            updateStats(allInventoryData, allTransactionData);
+            updateChart(allTransactionData);
+            
+            syncStatus.innerText = "● " + branch + " Live";
+            syncStatus.style.color = "var(--success)";
+            checkPendingCount();
+        } catch (error) {
+            syncStatus.innerText = "Connection Error";
+            syncStatus.style.color = "var(--danger)";
+        }
     }
 
     function setDefaultDates() {
@@ -200,56 +223,20 @@
         document.getElementById('month-selector').value = `${year}-${month}`;
     }
 
-    async function fetchInventory() {
-        const syncStatus = document.getElementById('sync-status');
-        const tableBody = document.getElementById('inventory-table-body');
-        try {
-            const response = await fetch(SHEETS_URL);
-            const data = await response.json();
-            if (data.error) {
-                syncStatus.innerText = "Error: " + data.error;
-                syncStatus.style.color = "var(--danger)";
-                return;
-            }
-            allInventoryData = data.inventory || data;
-            allTransactionData = data.transactions || []; 
-            renderTable(allTransactionData);
-            updateStats(allInventoryData, allTransactionData);
-            updateChart(allTransactionData);
-            syncStatus.innerText = "● Live (Synced)";
-            syncStatus.style.color = "var(--success)";
-            
-            // Check for pending counts after inventory load
-            checkPendingCount();
-        } catch (error) {
-            syncStatus.innerText = "Connection Error";
-            syncStatus.style.color = "var(--danger)";
-            tableBody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:red;">Failed to load data.</td></tr>`;
-        }
-    }
-
     async function checkPendingCount() {
         try {
             const response = await fetch(`${PENDING_API_URL}?action=getAdminData`);
             const data = await response.json();
             const pendingItems = data.approvals ? data.approvals.filter(item => item.status === "PENDING") : [];
             const count = pendingItems.length;
-
             const mainBadge = document.getElementById('main-pending-badge');
-            const smmgBadge = document.getElementById('smmg-pending-badge');
-
             if (count > 0) {
                 mainBadge.innerText = count;
                 mainBadge.style.display = "inline-block";
-                smmgBadge.innerText = count;
-                smmgBadge.style.display = "inline-block";
             } else {
                 mainBadge.style.display = "none";
-                smmgBadge.style.display = "none";
             }
-        } catch (e) {
-            console.log("Pending check failed");
-        }
+        } catch (e) { console.log("Pending check failed"); }
     }
 
     function renderTable(items) {
@@ -260,16 +247,14 @@
             return;
         }
         items.slice(0, 50).forEach(item => {
-            html += `
-                <tr>
-                    <td>${item.date}</td>
-                    <td style="font-family:monospace; font-weight:bold;">${item.si}</td>
-                    <td>${item.name}</td>
-                    <td style="font-weight:bold; color: var(--primary);">₱${parseFloat(item.total).toFixed(2)}</td>
-                </tr>
-            `;
+            html += `<tr>
+                <td>${item.date}</td>
+                <td style="font-family:monospace; font-weight:bold;">${item.si}</td>
+                <td>${item.name}</td>
+                <td style="font-weight:bold; color: var(--primary);">₱${parseFloat(item.total).toFixed(2)}</td>
+            </tr>`;
         });
-        tableBody.innerHTML = html;
+            tableBody.innerHTML = html;
     }
 
     function updateStats(invItems, transItems) {
@@ -338,10 +323,6 @@
     window.onload = function() {
         setDefaultDates();
         fetchInventory();
-        document.getElementById("dash-dropdown").classList.add("show");
-        document.getElementById("arrow-dash").classList.add("rotate");
-        
-        // Auto check pending every 2 minutes
         setInterval(checkPendingCount, 120000);
     };
 </script>

@@ -6,39 +6,66 @@
     <title>Admin - Transaction History</title>
     <link href="css/admin.css" rel="stylesheet">
     <style>
-        /* Karagdagang style para sa Transaction Table */
+        /* Transaction Card & Table Styling */
         .transaction-card {
             background: white;
             padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            margin-top: 10px;
         }
 
-        /* Dark Table Header para sa Admin Look */
         table thead th {
             background-color: #2c3e50 !important;
             color: white !important;
-            padding: 12px;
+            padding: 14px;
             text-transform: uppercase;
-            font-size: 0.75rem;
+            font-size: 0.7rem;
+            letter-spacing: 0.5px;
         }
 
         .status-badge {
             background: #e1f5fe;
             color: #039be5;
-            padding: 4px 8px;
-            border-radius: 4px;
+            padding: 5px 10px;
+            border-radius: 6px;
             font-weight: bold;
             font-size: 0.7rem;
+            display: inline-block;
         }
 
-        /* Sidebar Dropdown Styles */
-        .dropdown-btn { cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
-        .dropdown-container { display: none; background-color: rgba(0, 0, 0, 0.1); margin-bottom: 10px; border-radius: 4px; }
-        .dropdown-container a { padding-left: 45px !important; font-size: 0.85rem !important; }
-        .show { display: block; }
-        .rotate { transform: rotate(90deg); }
-        .arrow-icon { transition: transform 0.2s; font-size: 0.7rem; font-style: normal; }
+        /* Top Nav Branch Selector */
+        .store-dropdown {
+            padding: 8px 16px;
+            border-radius: 8px;
+            border: 1px solid #dfe6e9;
+            background-color: #f8f9fa;
+            font-weight: 700;
+            color: #2d3436;
+            cursor: pointer;
+            outline: none;
+            transition: 0.3s;
+        }
+
+        .store-dropdown:hover {
+            border-color: #3498db;
+            background-color: white;
+        }
+
+        /* Sidebar Badge */
+        .sidebar-badge {
+            background: #ff3f34;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.7rem;
+            margin-left: 5px;
+            display: none;
+        }
+        
+        .item-info {
+            line-height: 1.4;
+        }
     </style>
 </head>
 <body>
@@ -46,24 +73,11 @@
     <div class="sidebar">
         <div class="sidebar-brand">ADMIN PANEL</div>
         <div class="sidebar-menu">
-            <div class="menu-link dropdown-btn" onclick="toggleDropdown('dash-dropdown', 'arrow-dash')">
-                <span><i>📊</i> Dashboard Overview</span>
-                <i class="arrow-icon" id="arrow-dash">▶</i>
-            </div>
-            <div class="dropdown-container" id="dash-dropdown">
-                <a href="admin.html" class="menu-link active">● SM MEGAMALL</a>
-                <a href="admin_smne.html" class="menu-link">● SM NORTH EDSA</a>
-            </div>
-            
-            <div class="menu-link dropdown-btn" onclick="toggleDropdown('trans-dropdown', 'arrow-trans')">
-                <span><i>💸</i> Transactions</span>
-                <i class="arrow-icon" id="arrow-trans">▶</i>
-            </div>
-            <div class="dropdown-container" id="trans-dropdown">
-                <a href="smmg_transactions.html" class="menu-link active">● SM MEGAMALL</a>
-                <a href="#" class="menu-link">● SM NORTH EDSA</a>
-            </div>
-            
+            <a href="admin.html" class="menu-link"><i>📊</i> Dashboard</a>
+            <a href="pending.html" class="menu-link">
+                <i>✅</i> Pending Approvals <span class="sidebar-badge" id="main-badge">0</span>
+            </a>
+            <a href="smmg_transactions.html" class="menu-link active"><i>💸</i> Transactions</a>
             <a href="stock_management.html" class="menu-link"><i>📦</i> Stock Management</a>
             <a href="#" class="menu-link"><i>📋</i> Inventory Reports</a>
             <a href="index.html" class="menu-link" style="margin-top: auto; color: #ff5e57;"><i>🚪</i> Logout</a>
@@ -72,20 +86,26 @@
 
     <div class="main-container">
         <div class="top-nav">
-            <h3 style="color: var(--text-dark);">SM MEGAMALL <span style="font-weight: 400;">| Transaction History</span></h3>
-            <div class="admin-profile" style="display: flex; align-items: center; gap: 15px;">
-                <div id="sync-status" style="font-size: 0.8rem; color: #27ae60; font-weight: bold;">Loading Records...</div>
-                <span class="badge-admin">Admin</span>
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <h3 style="color: var(--text-dark); margin: 0;">Records:</h3>
+                <select id="branch-selector" class="store-dropdown" onchange="changeBranch()">
+                    <option value="MEGAMALL" selected>SM MEGAMALL</option>
+                    <option value="NORTH_EDSA">SM NORTH EDSA</option>
+                </select>
+                <span id="sync-status" style="font-size: 0.8rem; font-weight: bold;">Connecting...</span>
+            </div>
+            <div class="admin-profile">
+                <span class="badge-admin" id="branch-label">Megamall Branch</span>
             </div>
         </div>
 
         <div class="content-padding">
             <div class="transaction-card">
                 <div class="section-header" style="margin-bottom: 20px;">
-                    <input type="text" id="txnSearch" class="search-box" style="width: 100%; max-width: 400px;" placeholder="Search SI, Name, or Date..." onkeyup="filterTransactions()">
+                    <input type="text" id="txnSearch" class="search-box" style="width: 100%; max-width: 450px; padding: 12px;" placeholder="Search SI, Customer, or Barcode..." onkeyup="filterTransactions()">
                 </div>
 
-                <div class="data-section" style="box-shadow: none; padding: 0;">
+                <div class="data-section" style="box-shadow: none; padding: 0; overflow-x: auto;">
                     <table id="txnTable">
                         <thead>
                             <tr>
@@ -96,11 +116,12 @@
                                 <th>Address</th>
                                 <th>Total Amount</th>
                                 <th>Cashier</th>
-                                <th>Items</th>
+                                <th>Items Ordered</th>
                             </tr>
                         </thead>
                         <tbody id="txnBody">
-                            </tbody>
+                            <tr><td colspan="8" style="text-align:center; padding: 50px;">Initializing system...</td></tr>
+                        </tbody>
                     </table>
                 </div>
             </div>
@@ -108,28 +129,40 @@
     </div>
 
     <script>
-        const SHEETS_URL = "https://script.google.com/macros/s/AKfycbz1USQaikCAt_thoeLYfUD4p1vHmrPmY1Ik8tNb_ghLwYhZmlKALjsK8Webs4g_XtP5/exec";
+        const BRANCH_CONFIG = {
+            'MEGAMALL': {
+                url: "https://script.google.com/macros/s/AKfycbwwkcQnmXYG_E3Z9rJGyZ9dlluJ9nPFs9GeWZt211ZyEbN0wxHf9MFjXRE6NLh0fh0t/exec",
+                label: "Megamall Branch"
+            },
+            'NORTH_EDSA': {
+                url: "https://script.google.com/macros/s/AKfycbxKnZHePSbSMqf1G_lcnF867kEL6Idq6yNEBWiu2XtklhljQlCnloSshXHXNoHY6wUi/exec",
+                label: "North Edsa Branch"
+            }
+        };
 
-        // Sidebar Logic
-        function toggleDropdown(id, arrowId) {
-            const dropdown = document.getElementById(id);
-            const arrow = document.getElementById(arrowId);
-            dropdown.classList.toggle("show");
-            arrow.classList.toggle("rotate");
+        function changeBranch() {
+            const branch = document.getElementById('branch-selector').value;
+            document.getElementById('branch-label').innerText = BRANCH_CONFIG[branch].label;
+            document.getElementById('txnBody').innerHTML = '<tr><td colspan="8" style="text-align:center; padding: 50px;">🔄 Syncing branch data...</td></tr>';
+            loadTransactions();
         }
 
         async function loadTransactions() {
+            const branch = document.getElementById('branch-selector').value;
+            const SHEETS_URL = BRANCH_CONFIG[branch].url;
             const status = document.getElementById('sync-status');
             const tbody = document.getElementById('txnBody');
             
             try {
                 const response = await fetch(`${SHEETS_URL}?action=getTransactions`);
                 let rawData = await response.json();
-                rawData.shift(); 
                 
-                tbody.innerHTML = '';
+                rawData.shift(); // Remove header row
+                
                 if (!rawData || rawData.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;">No records found.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding: 30px;">No transaction history found for this branch.</td></tr>';
+                    status.innerText = "● Empty";
+                    status.style.color = "#f39c12";
                     return;
                 }
 
@@ -141,7 +174,8 @@
                     if (siInRow !== "") {
                         if (currentGroup) groups.push(currentGroup);
                         
-                        let cashierName = "---";
+                        // Cashier Logic
+                        let cashierName = "STAFF";
                         if (r[5] || r[10]) cashierName = "ARENAS";
                         else if (r[6] || r[11]) cashierName = "CLIMACO";
                         else if (r[7] || r[12]) cashierName = "KING KING";
@@ -171,26 +205,28 @@
                 });
                 if (currentGroup) groups.push(currentGroup);
 
+                tbody.innerHTML = '';
                 let useAltColor = false;
+                
                 groups.reverse().forEach(group => {
                     useAltColor = !useAltColor;
-                    const groupBg = useAltColor ? "#f8f9fa" : "#ffffff";
+                    const groupBg = useAltColor ? "#fdfdfd" : "#ffffff";
 
                     const mainTr = document.createElement('tr');
                     mainTr.style.backgroundColor = groupBg;
                     mainTr.style.borderTop = "2px solid #3498db"; 
                     
                     mainTr.innerHTML = `
-                        <td style="font-weight:600;">${group.main.date}</td>
+                        <td style="font-weight:600; color:#555;">${group.main.date}</td>
                         <td style="font-weight:bold; color:#e67e22;">${group.main.si}</td>
                         <td>${group.main.tin}</td>
                         <td style="font-weight:600;">${group.main.name}</td>
-                        <td>${group.main.address}</td>
+                        <td style="font-size: 0.8rem;">${group.main.address}</td>
                         <td style="font-weight:bold; color: #27ae60;">${group.main.total}</td>
                         <td><span class="status-badge">${group.main.cashier}</span></td>
-                        <td>
-                            <div style="font-weight:600;">${group.main.itemName}</div>
-                            <div style="font-size:0.7rem; color:#888;">Code: ${group.main.barcode}</div>
+                        <td class="item-info">
+                            <div style="font-weight:700;">${group.main.itemName}</div>
+                            <div style="font-size:0.65rem; color:#7f8c8d;">SN: ${group.main.barcode}</div>
                         </td>
                     `;
                     tbody.appendChild(mainTr);
@@ -200,19 +236,21 @@
                         subTr.style.backgroundColor = groupBg;
                         subTr.innerHTML = `
                             <td colspan="7" style="border:none;"></td> 
-                            <td style="border-top: 1px dashed #ddd;">
-                                <div style="font-weight:600; color:#555;">${sub.itemName}</div>
-                                <div style="font-size:0.7rem; color:#888;">Code: ${sub.barcode}</div>
+                            <td style="border-top: 1px dashed #eee; padding-top: 5px;">
+                                <div style="font-weight:700; color:#2d3436;">${sub.itemName}</div>
+                                <div style="font-size:0.65rem; color:#7f8c8d;">SN: ${sub.barcode}</div>
                             </td>
                         `;
                         tbody.appendChild(subTr);
                     });
                 });
 
-                status.innerText = "● Live (Synced)";
+                status.innerText = `● ${branch} LIVE`;
+                status.style.color = "#27ae60";
             } catch (error) {
-                status.innerText = "Error syncing data.";
-                console.error(error);
+                status.innerText = "Connection Error";
+                status.style.color = "red";
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:red;">Failed to fetch data. Check internet connection.</td></tr>';
             }
         }
 
@@ -240,8 +278,6 @@
         }
 
         window.onload = loadTransactions;
-		
-		
     </script>
 </body>
 </html>

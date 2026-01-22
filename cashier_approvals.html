@@ -12,10 +12,15 @@
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
         th { text-align: left; padding: 12px; border-bottom: 2px solid #eee; color: white; }
         td { padding: 12px; border-bottom: 1px solid #eee; }
-		
+        
         .status-pill { padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; }
         .pending { background: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
         
+        /* New Style for Note Labels (Column G) */
+        .note-pill { padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; }
+        .note-stockin { background: #e3f2fd; color: #1976d2; border: 1px solid #bbdefb; }
+        .note-pullout { background: #fdeaea; color: #c62828; border: 1px solid #ffcdd2; }
+
         .sync-box { display: flex; align-items: center; gap: 10px; font-size: 0.8rem; margin-bottom: 15px; color: #666; }
         .dot { height: 8px; width: 8px; border-radius: 50%; display: inline-block; background: #ccc; }
         .dot.online { background: #27ae60; animation: blink 1s infinite; }
@@ -31,6 +36,7 @@
             <a href="POS.html" class="menu-item"><i>🛒</i> Point of Sale</a>
             <a href="transactions.html" class="menu-item"><i>📜</i> Transactions</a>
             <a href="delivery.html" class="menu-item"><i>🚚</i> Stock Delivery</a>
+            <a href="pullout.html" class="menu-item"><i>📤</i> Stock Pull Out</a>
             <a href="cashier_approvals.html" class="menu-item active"><i>⏳</i> My Pending Stocks</a>
             <a href="stocks.html" class="menu-item"><i>📦</i> Check Stocks</a>
             <a href="index.html" class="menu-item" style="margin-top: auto;"><i>🚪</i> Logout</a>
@@ -59,7 +65,7 @@
                 <table>
                     <thead>
                         <tr>
-                            <th>Barcode</th>
+                            <th>Type</th> <th>Barcode</th>
                             <th>Description</th>
                             <th>Unit Price</th>
                             <th>Status</th>
@@ -76,8 +82,7 @@
     </div>
 
     <script>
-        // Gamitin ang parehong URL ng iyong Apps Script
-        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzY8_i2U7WRe7Z6Dm4dVv0-L26QbnSW4gQETNPATCthogPIpAomKiSXVaRZbgsH7opx/exec";
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwwkcQnmXYG_E3Z9rJGyZ9dlluJ9nPFs9GeWZt211ZyEbN0wxHf9MFjXRE6NLh0fh0t/exec";
 
         async function fetchMyApprovals() {
             const tableBody = document.getElementById('cashier-approval-table');
@@ -86,10 +91,11 @@
             const syncText = document.getElementById('sync-text');
 
             try {
+                // Fetch data from Google Apps Script
                 const response = await fetch(`${WEB_APP_URL}?action=getAdminData`);
                 const data = await response.json();
                 
-                // I-filter lang ang "PENDING" at ipakita sa cashier
+                // Filter only PENDING items
                 const myPending = data.approvals ? data.approvals.filter(item => item.status === "PENDING") : [];
 
                 syncDot.className = "dot online";
@@ -97,14 +103,23 @@
                 loadingMsg.style.display = 'none';
 
                 if (myPending.length === 0) {
-                    tableBody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:30px;">Yehey! No pending stocks. Lahat ay approved na.</td></tr>`;
+                    tableBody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:30px;">Yehey! No pending stocks. Lahat ay approved na.</td></tr>`;
                     return;
                 }
 
                 let html = "";
                 myPending.forEach(item => {
+                    // KUKUNIN ANG TYPE SA COLUMN G (item.note na pinasa ng script)
+                    // Kung walang laman ang Column G, default ay [STOCK-IN]
+                    const typeLabel = item.note || "[STOCK-IN]"; 
+                    
+                    // Logic para sa kulay ng Type label (note-pill)
+                    // Nagche-check kung "PULLOUT" ang text para maging red, kung hindi ay blue
+                    const noteClass = typeLabel.toUpperCase().includes("PULLOUT") ? "note-pullout" : "note-stockin";
+
                     html += `
                         <tr>
+                            <td><span class="note-pill ${noteClass}">${typeLabel}</span></td>
                             <td style="font-family: monospace; font-weight: bold;">${item.barcode}</td>
                             <td>${item.name}</td>
                             <td>₱${parseFloat(item.price).toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
@@ -121,7 +136,6 @@
             }
         }
 
-        // Auto refresh every 30 seconds para updated si cashier
         setInterval(fetchMyApprovals, 30000);
         window.onload = fetchMyApprovals;
     </script>

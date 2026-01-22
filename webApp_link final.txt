@@ -1,0 +1,245 @@
+const BRANCH_CONFIG = {
+            'MEGAMALL': {
+                url: "https://script.google.com/macros/s/AKfycbwwkcQnmXYG_E3Z9rJGyZ9dlluJ9nPFs9GeWZt211ZyEbN0wxHf9MFjXRE6NLh0fh0t/exec",
+                label: "Megamall Branch"
+            },
+            'NORTH_EDSA': {
+                url: "https://script.google.com/macros/s/AKfycbxKnZHePSbSMqf1G_lcnF867kEL6Idq6yNEBWiu2XtklhljQlCnloSshXHXNoHY6wUi/exec",
+                label: "North Edsa Branch"
+            }
+        };
+
+
+
+
+
+
+function doPost(e) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  
+  try {
+    // --- TRIGGER PARA SA "APPROVE ALL" MULA SA WEB ---
+    if (e.parameter && e.parameter.action === "approveAll") {
+      approvePendingStocks(true);
+      return ContentService.createTextOutput("Approved").setMimeType(ContentService.MimeType.TEXT);
+    }
+
+    const data = JSON.parse(e.postData.contents);
+
+    // --- LOGIC PARA SA DELIVERY (STOCK IN) ---
+    if (Array.isArray(data) && data.length > 0 && data[0].barcode && !data[0].si) {
+      const approvalSheet = ss.getSheetByName("Approval"); 
+      
+      data.forEach(item => {
+        approvalSheet.appendRow([
+          item.barcode,   // Column A: BARCODE
+          item.name,      // Column B: ITEM NAME
+          item.price,     // Column C: PRICE
+          "PENDING"       // Column D: STATUS
+        ]);
+      });
+
+      return ContentService.createTextOutput("Sent to Approval").setMimeType(ContentService.MimeType.TEXT);
+    }
+
+    // --- SALES / POS TRANSACTIONS LOGIC ---
+    const sheet = ss.getSheetByName("Transactions");
+    const invSheet = ss.getSheetByName("Inventory"); 
+    const backupSheet = ss.getSheetByName("Backup"); 
+    
+    const items = data.items; 
+    const startRow = sheet.getLastRow() + 1;
+    const cashier = data.seller;
+
+    let totalItemAmount = 0;
+    let serviceFeeAmount = 0;
+
+    items.forEach(item => {
+      if (item.barcode === "SERVICE") {
+        serviceFeeAmount += item.price;
+      } else {
+        totalItemAmount += item.price;
+      }
+    });
+
+    let colItem = 0;
+    let colService = 0;
+
+    if (cashier === "ARENAS") { colItem = 6; colService = 11; }
+    else if (cashier === "CLIMACO") { colItem = 7; colService = 12; }
+    else if (cashier === "KING KING") { colItem = 8; colService = 13; }
+    else if (cashier === "BUEMIO") { colItem = 9; colService = 14; }
+    else if (cashier === "BROZO") { colItem = 10; colService = 15; }
+
+    items.forEach((item, index) => {
+      let currentRow = startRow + index;
+      if (index === 0) {
+        sheet.getRange(currentRow, 1).setValue(data.date);
+        sheet.getRange(currentRow, 2).setValue(data.si);
+        sheet.getRange(currentRow, 3).setValue(data.tin);
+        sheet.getRange(currentRow, 4).setValue(data.name);
+        sheet.getRange(currentRow, 5).setValue(data.address);
+        if (colItem > 0) {
+          sheet.getRange(currentRow, colItem).setValue(totalItemAmount);
+          sheet.getRange(currentRow, colService).setValue(serviceFeeAmount);
+        }
+        sheet.getRange(currentRow, 16).setValue(data.total);
+        
+        if (data.vatable_sales) {
+          sheet.getRange(currentRow, 17).setValue(parseFloat(data.vatable_sales).toFixed(2)); 
+        }
+        if (data.vat_amount) {
+          sheet.getRange(currentRow, 18).setValue(parseFloat(data.vat_amount).toFixed(2));
+        }
+      }
+      sheet.getRange(currentRow, 19).setValue(item.barcode);
+      sheet.getRange(currentRow, 20).setValue(item.name);
+      if (item.barcode === "SERVICE") {
+        sheet.getRange(currentRow, 22).setValue(item.price);
+      } else {
+        sheet.getRange(currentRow, 21).setValue(item.price);
+
+        const invValues = invSheet.getDataRange().getValues();
+        const barcodeList = invValues.map(r => String(r[0]));
+        const rowIndex = barcodeList.indexOf(String(item.barcode));
+
+        if (rowIndex !== -1) {
+          const rowData = invValues[rowIndex]; 
+          const timestamp = new Date();
+          backupSheet.appendRow([rowData[0], rowData[1], rowData[2], timestamp]);
+          invSheet.deleteRow(rowIndex + 1);
+        }
+      }
+    });
+
+    return ContentService.createTextOutput("Success").setMimeType(ContentService.MimeType.TEXT);
+  } catch (err) {
+    return ContentService.createTextOutput("Error: " + err.toString()).setMimeType(ContentService.MimeType.TEXT);
+  }
+}
+
+function doGet(e) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const action = e.parameter.action;
+
+  // --- BAGONG LOGIC PARA SA TRANSACTION HISTORY (HINAHANAP NG HTML MO) ---
+  if (action === "getTransactions") {
+    const txnSheet = ss.getSheetByName("Transactions");
+    const txnData = txnSheet.getDataRange().getValues();
+    return ContentService.createTextOutput(JSON.stringify(txnData))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+  
+  // --- BAGONG LOGIC PARA SA STOCK MANAGEMENT SUMMARY ---
+  if (action === "summary") {
+    const invSheet = ss.getSheetByName("Inventory");
+    const invDataRaw = invSheet.getDataRange().getValues();
+    invDataRaw.shift(); // Alisin ang header
+
+    const summaryMap = {};
+
+    invDataRaw.forEach(r => {
+      const barcode = String(r[0]);
+      const name = String(r[1]);
+      if (barcode && name) {
+        if (!summaryMap[name]) {
+          summaryMap[name] = { item_name: name, quantity: 0, category: "General" };
+        }
+        summaryMap[name].quantity += 1;
+      }
+    });
+
+    const summaryList = Object.values(summaryMap);
+    return ContentService.createTextOutput(JSON.stringify(summaryList)).setMimeType(ContentService.MimeType.JSON);
+  }
+
+  // --- ORIHINAL NA MGA LOGIC (WALANG BINURA) ---
+  const invSheet = ss.getSheetByName("Inventory");
+  const invDataRaw = invSheet.getDataRange().getValues();
+  invDataRaw.shift(); 
+  const inventory = invDataRaw.map(r => ({
+    barcode: String(r[0]),
+    name: String(r[1]),
+    price: parseFloat(r[2]) || 0,
+    stock: 1 
+  }));
+
+  const txnSheet = ss.getSheetByName("Transactions");
+  const txnDataRaw = txnSheet.getDataRange().getValues();
+  const transactions = [];
+
+  for (let i = 1; i < txnDataRaw.length; i++) {
+    const row = txnDataRaw[i];
+    if (row[1]) { 
+      transactions.push({
+        date: row[0],
+        si: String(row[1]),
+        name: String(row[3]),
+        total: parseFloat(row[15]) || 0,
+        seller: "N/A" 
+      });
+    }
+  }
+
+  const appSheet = ss.getSheetByName("Approval");
+  const appDataRaw = appSheet.getDataRange().getValues();
+  const approvals = [];
+  for (let i = 1; i < appDataRaw.length; i++) {
+    approvals.push({
+      barcode: String(appDataRaw[i][0]),
+      name: String(appDataRaw[i][1]),
+      price: parseFloat(appDataRaw[i][2]) || 0,
+      status: String(appDataRaw[i][3])
+    });
+  }
+
+  const result = { 
+    inventory: inventory, 
+    transactions: transactions,
+    approvals: approvals 
+  };
+  
+  return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
+}
+
+function onOpen() {
+  const ui = SpreadsheetApp.getUi();
+  ui.createMenu('🛡️ ADMIN TOOLS')
+    .addItem('Approve All Pending Stocks', 'approvePendingStocksFromMenu')
+    .addToUi();
+}
+
+function approvePendingStocksFromMenu() {
+  approvePendingStocks(false);
+}
+
+function approvePendingStocks(isWebMode) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const approvalSheet = ss.getSheetByName("Approval");
+  const invSheet = ss.getSheetByName("Inventory");
+  
+  const data = approvalSheet.getDataRange().getValues();
+  if (data.length <= 1) return; 
+
+  let approvedCount = 0;
+  const remainingRows = [data[0]]; 
+
+  for (let i = 1; i < data.length; i++) {
+    const row = data[i];
+    if (String(row[3]).toUpperCase() === "PENDING") {
+      invSheet.appendRow([row[0], row[1], row[2]]); 
+      approvedCount++;
+    } else {
+      remainingRows.push(row);
+    }
+  }
+
+  approvalSheet.clearContents();
+  if (remainingRows.length > 0) {
+    approvalSheet.getRange(1, 1, remainingRows.length, remainingRows[0].length).setValues(remainingRows);
+  }
+  
+  if (!isWebMode) {
+    SpreadsheetApp.getUi().alert("Success! " + approvedCount + " items added to Inventory.");
+  }
+}

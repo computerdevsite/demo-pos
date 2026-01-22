@@ -8,19 +8,18 @@
 </head>
 <body>
 
-    
     <div class="sidebar">
         <div class="sidebar-header">SM MEGAMALL</div>
         <div class="sidebar-menu">
             <a href="POS.html" class="menu-item active"><i>🛒</i> Point of Sale</a>
             <a href="transactions.html" class="menu-item"><i>📜</i> Transactions</a>
             <a href="delivery.html" class="menu-item"><i>🚚</i> Stock Delivery</a>
-			<a href="cashier_approvals.html" class="menu-item"><i>⏳</i> My Pending Stocks</a>
+            <a href="pullout.html" class="menu-item"><i>📤</i> Stock Pull Out</a>
+            <a href="cashier_approvals.html" class="menu-item"><i>⏳</i> My Pending Stocks</a>
             <a href="stocks.html" class="menu-item"><i>📦</i> Check Stocks</a>
             <a href="index.html" class="menu-item" style="margin-top: auto;"><i>🚪</i> Logout</a>
         </div>
     </div>
-
 
     <div class="main-content">
         <div class="top-bar">
@@ -54,22 +53,22 @@
                     </div>
                 </div>
 
-<div style="margin-top: auto; padding-top: 5px; display: flex; justify-content: space-evenly; align-items: center;">
-    <div class="">
-    <div class="cashier-op">
-        <label>SERVICE FEE</label>
-        <input type="number" id="service_fee_input" placeholder="0.00" onkeypress="handleServiceEnter(event)">
-    </div>
-    </div>
+                <div style="margin-top: auto; padding-top: 5px; display: flex; justify-content: space-evenly; align-items: center;">
+                    <div class="">
+                        <div class="cashier-op">
+                            <label>SERVICE FEE</label>
+                            <input type="number" id="service_fee_input" placeholder="0.00" onkeypress="handleServiceEnter(event)" oninput="updateUI()">
+                        </div>
+                    </div>
 
-    <div class="">
-    <label>Customer type</label>
-    <div class="cashier-grid1">
-        <label class="cashier-opt"><input type="radio" name="customer" value="IAYC SERVICE FEE" onchange="updateUI()">IAYC</label>
-        <label class="cashier-opt"><input type="radio" name="customer" value="NON-IAYC SERVICE FEE" checked onchange="updateUI()">NON-IAYC</label>
-    </div>
-    </div>
-</div>
+                    <div class="">
+                        <label>Customer type</label>
+                        <div class="cashier-grid1">
+                            <label class="cashier-opt"><input type="radio" name="customer" value="IAYC SERVICE FEE" onchange="updateUI()">IAYC</label>
+                            <label class="cashier-opt"><input type="radio" name="customer" value="NON-IAYC SERVICE FEE" checked onchange="updateUI()">NON-IAYC</label>
+                        </div>
+                    </div>
+                </div>
 
                 <div style="margin-top: auto; padding-top: 20px;">
                     <label>Verify Seller ID</label>
@@ -103,18 +102,15 @@
                     <div class="total-row"><span>Subtotal:</span><span id="subtotal-val">₱0.00</span></div>
                     <div class="total-row" style="color:#f1c40f;"><span>Total Deductions:</span><span id="discount-val">-₱0.00</span></div>
 
-                    
-                    <div class="grand-total" style="font-weight: normal;">
-                        <div class="total-row" style="color:white;"><span>VATable Sales:</span></div>
-                        <div class="total-row" style="color:white;"><span id="VATable-val">₱0.00</span></div>
+                    <div class="grand-total" style="font-weight: normal; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px;">
+                        <div class="total-row" style="color:white;"><span>VATable Sales:</span><span id="VATable-val">₱0.00</span></div>
                     </div>
 
-                    <div class="grand-total" style="font-weight: normal; border-top: none; margin-top: -18px;">
-                        <div class="total-row" style="color:white;"><span>VAT:</span></div>
-                        <div class="total-row" style="color:white;"><span id="VAT-val">₱0.00</span></div>
+                    <div class="grand-total" style="font-weight: normal; border-top: none; margin-top: -10px;">
+                        <div class="total-row" style="color:white;"><span>VAT (12%):</span><span id="VAT-val">₱0.00</span></div>
                     </div>
 
-                    <div class="grand-total">
+                    <div class="grand-total" style="border-top: 2px solid white; margin-top: 5px; padding-top: 10px;">
                         <span>TOTAL</span>
                         <span id="total-val">₱0.00</span>
                     </div>
@@ -125,6 +121,266 @@
         </div>
     </div>
 
-    <script src="js/pos_smmg.js"></script>
+    <script>
+        const SHEETS_URL = "https://script.google.com/macros/s/AKfycbwwkcQnmXYG_E3Z9rJGyZ9dlluJ9nPFs9GeWZt211ZyEbN0wxHf9MFjXRE6NLh0fh0t/exec";
+
+        let inventory = []; 
+        let cart = [];
+
+        window.onload = function() {
+            const dateInput = document.getElementById('si_date');
+            if (dateInput) {
+                const today = new Date();
+                const formattedDate = (today.getMonth() + 1).toString().padStart(2, '0') + '/' + 
+                                     today.getDate().toString().padStart(2, '0') + '/' + 
+                                     today.getFullYear();
+                dateInput.value = formattedDate;
+            }
+            fetchInventory();
+        };
+
+        // --- DATA FETCHING ---
+        async function fetchInventory() {
+            const indicator = document.getElementById('loading-indicator');
+            if(indicator) {
+                indicator.style.display = 'inline';
+                indicator.innerText = "(Connecting...)";
+            }
+            
+            try {
+                // Pinapasa ang action=getAdminData para makuha ang buong dataset kasama inventory
+                const response = await fetch(SHEETS_URL + "?action=getAdminData&t=" + new Date().getTime());
+                const result = await response.json();
+                
+                if (result.error) {
+                    if(indicator) indicator.innerText = "(" + result.error + ")";
+                } else {
+                    // Update: Kinukuha ang inventory property mula sa unified result
+                    inventory = result.inventory || []; 
+                    
+                    if(indicator) {
+                        indicator.innerText = "(Sheets Linked: " + inventory.length + " items)";
+                        indicator.style.color = "#27ae60";
+                    }
+                }
+            } catch (error) {
+                console.error("Fetch Error:", error);
+                if(indicator) {
+                    indicator.innerText = "(Connection Error)";
+                    indicator.style.color = "#e74c3c";
+                }
+            }
+        }
+
+        // --- SEARCH & ADD ---
+        function searchInventory() {
+            const barcodeInput = document.getElementById('item_barcode');
+            const bcValue = barcodeInput.value.trim();
+            barcodeInput.classList.remove('invalid-field');
+
+            const item = inventory.find(i => String(i.barcode).trim() === bcValue);
+
+            if (item) {
+                document.getElementById('item_name').value = item.name;
+                document.getElementById('item_price').value = parseFloat(item.price).toFixed(2);
+            } else {
+                document.getElementById('item_name').value = "";
+                document.getElementById('item_price').value = "";
+            }
+        }
+
+        function handleEnter(e) { 
+            if (e.key === "Enter") {
+                e.preventDefault();
+                addItem(); 
+            }
+        }
+
+        function addItem() {
+            const barcodeInput = document.getElementById('item_barcode');
+            const name = document.getElementById('item_name').value;
+            const priceStr = document.getElementById('item_price').value;
+            const price = parseFloat(priceStr);
+            const barcodeValue = barcodeInput.value.trim();
+
+            if (!name || isNaN(price)) {
+                barcodeInput.classList.add('invalid-field');
+                return;
+            }
+
+            barcodeInput.classList.remove('invalid-field');
+            cart.push({ id: Date.now(), barcode: barcodeValue, name: name, price: price, qty: 1 });
+            
+            barcodeInput.value = '';
+            document.getElementById('item_name').value = '';
+            document.getElementById('item_price').value = '';
+            barcodeInput.focus();
+            updateUI();
+        }
+
+        // --- SERVICE FEE (IAYC / NON-IAYC) ---
+        function handleServiceEnter(e) {
+            if (e.key === "Enter") {
+                e.preventDefault();
+                addServiceFee();
+            }
+        }
+
+        function addServiceFee() {
+            const feeInput = document.getElementById('service_fee_input');
+            const selectedType = document.querySelector('input[name="customer"]:checked');
+            const feeAmount = parseFloat(feeInput.value);
+            
+            if (isNaN(feeAmount) || feeAmount <= 0) {
+                alert("Please enter a valid Service Fee amount.");
+                return;
+            }
+
+            if (!selectedType) {
+                alert("Please select a Customer Type.");
+                return;
+            }
+
+            cart.push({
+                id: Date.now(),
+                barcode: "SERVICE",
+                name: selectedType.value,
+                price: feeAmount,
+                qty: 1
+            });
+
+            feeInput.value = '';
+            updateUI();
+        }
+
+        function removeItem(id) {
+            cart = cart.filter(i => i.id !== id);
+            updateUI();
+        }
+
+        // --- UI UPDATES ---
+        function updateUI() {
+            const list = document.getElementById('cart-list');
+            const disc = parseFloat(document.getElementById('manual_discount').value) || 0;
+            const otherDed = parseFloat(document.getElementById('other_deductions').value) || 0;
+            
+            const dateInput = document.getElementById('si_date').value || "---";
+            const cashierInput = document.querySelector('input[name="cashier"]:checked');
+            const cashierName = cashierInput ? cashierInput.value : "---";
+            
+            document.getElementById('preview-meta').innerText = `Date: ${dateInput} | Seller: ${cashierName}`;
+
+            let sub = 0;
+            let html = '<div class="cart-row cart-header"><span>#</span><span>Barcode</span><span>Item</span><span>Price</span><span></span></div>';
+            
+            cart.forEach((item, i) => {
+                sub += item.price;
+                html += `<div class="cart-row">
+                    <span>${i+1}</span>
+                    <span class="cart-barcode">${item.barcode}</span>
+                    <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${item.name}</span>
+                    <span>₱${item.price.toFixed(2)}</span>
+                    <button class="btn-remove" onclick="removeItem(${item.id})">✕</button>
+                </div>`;
+            });
+
+            list.innerHTML = html;
+            
+            const totalDeductions = disc + otherDed;
+            const finalTotal = Math.max(0, sub - totalDeductions);
+            
+            document.getElementById('subtotal-val').innerText = `₱${sub.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+            document.getElementById('discount-val').innerText = `-₱${totalDeductions.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+            document.getElementById('total-val').innerText = `₱${finalTotal.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+            
+            const vatableAmount = finalTotal / 1.12;
+            const vatAmount = finalTotal - vatableAmount;
+
+            document.getElementById('VATable-val').innerText = `₱${vatableAmount.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+            document.getElementById('VAT-val').innerText = `₱${vatAmount.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+
+            list.scrollTop = list.scrollHeight;
+        }
+
+        function emptyCart() { if(confirm("Void current transaction?")) { cart = []; updateUI(); } }
+
+        // --- FINAL PROCESS INVOICE ---
+        async function processInvoice() {
+            const btnSave = document.querySelector('.btn-save');
+            const date = document.getElementById('si_date').value;
+            const si = document.getElementById('si_number').value;
+            const name = document.getElementById('cust_name').value;
+            const feeInput = document.getElementById('service_fee_input');
+            const cashierInput = document.querySelector('input[name="cashier"]:checked');
+
+            if (!cashierInput) {
+                alert("Paki-pili muna ang pangalan ng Cashier bago i-save!");
+                return;
+            }
+
+            // Guard para sa hindi na-enter na service fee
+            if (feeInput && feeInput.value.trim() !== "" && parseFloat(feeInput.value) > 0) {
+                const confirmFee = confirm("May amount sa Service Fee box. Isasama ba ito?");
+                if (confirmFee) addServiceFee();
+                else { feeInput.focus(); return; }
+            }
+
+            if (!date || !si || !name || cart.length === 0) {
+                alert("Kulang ang data o walang laman ang cart!");
+                return;
+            }
+
+            const totalDisplay = document.getElementById('total-val').innerText;
+            const totalValue = parseFloat(totalDisplay.replace(/[₱,]/g, '')) || 0;
+
+            const vatableSales = (totalValue / 1.12).toFixed(2);
+            const vatAmount = (totalValue - parseFloat(vatableSales)).toFixed(2);
+
+            btnSave.innerText = "SAVING...";
+            btnSave.disabled = true;
+
+            const transactionData = {
+                action: "save_transaction", 
+                date: date,
+                si: si,
+                tin: document.getElementById('tin_number').value || "N/A",
+                name: name,
+                address: document.getElementById('cust_address').value || "N/A",
+                seller: cashierInput.value,
+                total: totalValue.toFixed(2),
+                vatable_sales: vatableSales,
+                vat_amount: vatAmount,
+                items: cart 
+            };
+
+            try {
+                await fetch(SHEETS_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    cache: 'no-cache',
+                    body: JSON.stringify(transactionData)
+                });
+
+                alert("SUCCESS: Transaction Saved!");
+                await fetchInventory(); 
+
+                // Reset
+                const cashiers = document.querySelectorAll('input[name="cashier"]');
+                cashiers.forEach(radio => radio.checked = false);
+                cart = [];
+                ["si_number", "cust_name", "cust_address", "tin_number", "service_fee_input", "other_deductions", "manual_discount"].forEach(id => {
+                    const el = document.getElementById(id);
+                    if(el) el.value = (id.includes('discount') || id.includes('deduction')) ? "0" : "";
+                });
+                updateUI();
+                
+            } catch (error) {
+                alert("CONNECTION ERROR!");
+            } finally {
+                btnSave.innerText = "COMPLETE SALE";
+                btnSave.disabled = false;
+            }
+        }
+    </script>
 </body>
 </html>
