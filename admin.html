@@ -199,7 +199,9 @@
             const data = await response.json();
             
             allInventoryData = data.inventory || data;
-            allTransactionData = data.transactions || []; 
+            
+            // UPDATE: In-apply ang .reverse() para ang pinakabagong entry mula sa Google Sheets (bottom row) ay mapunta sa itaas ng table
+            allTransactionData = (data.transactions || []).reverse(); 
             
             renderTable(allTransactionData);
             updateStats(allInventoryData, allTransactionData);

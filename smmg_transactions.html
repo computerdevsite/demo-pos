@@ -5,8 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin - Transaction History</title>
     <link href="css/admin.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        /* Transaction Card & Table Styling */
+        /* Admin Theme consistency overrides */
         .transaction-card {
             background: white;
             padding: 20px;
@@ -22,6 +23,7 @@
             text-transform: uppercase;
             font-size: 0.7rem;
             letter-spacing: 0.5px;
+            text-align: left;
         }
 
         .status-badge {
@@ -34,7 +36,6 @@
             display: inline-block;
         }
 
-        /* Top Nav Branch Selector */
         .store-dropdown {
             padding: 8px 16px;
             border-radius: 8px;
@@ -47,24 +48,30 @@
             transition: 0.3s;
         }
 
-        .store-dropdown:hover {
-            border-color: #3498db;
-            background-color: white;
-        }
+        .item-info { line-height: 1.4; }
 
-        /* Sidebar Badge */
-        .sidebar-badge {
-            background: #ff3f34;
+        .btn-export {
+            background-color: #27ae60;
             color: white;
-            padding: 2px 8px;
-            border-radius: 10px;
-            font-size: 0.7rem;
-            margin-left: 5px;
-            display: none;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
         }
-        
-        .item-info {
-            line-height: 1.4;
+        .btn-export:hover { background-color: #219150; }
+
+        .status-dot {
+            height: 10px;
+            width: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 5px;
+            background-color: #f1c40f; /* Syncing color */
         }
     </style>
 </head>
@@ -78,21 +85,24 @@
                 <i>✅</i> Pending Approvals <span class="sidebar-badge" id="main-badge">0</span>
             </a>
             <a href="smmg_transactions.html" class="menu-link active"><i>💸</i> Transactions</a>
+            <a href="stock_transfer.html" class="menu-link"><i>🔄</i> Stock Transfer</a>
             <a href="stock_management.html" class="menu-link"><i>📦</i> Stock Management</a>
-            <a href="#" class="menu-link"><i>📋</i> Inventory Reports</a>
+            <a href="inventory_reports.html" class="menu-link"><i>📋</i> Inventory Reports</a>
             <a href="index.html" class="menu-link" style="margin-top: auto; color: #ff5e57;"><i>🚪</i> Logout</a>
         </div>
     </div>
 
     <div class="main-container">
         <div class="top-nav">
-            <div style="display: flex; align-items: center; gap: 10px;">
-                <h3 style="color: var(--text-dark); margin: 0;">Records:</h3>
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <h3 style="color: var(--text-dark); margin: 0;">Sales Records</h3>
                 <select id="branch-selector" class="store-dropdown" onchange="changeBranch()">
                     <option value="MEGAMALL" selected>SM MEGAMALL</option>
                     <option value="NORTH_EDSA">SM NORTH EDSA</option>
                 </select>
-                <span id="sync-status" style="font-size: 0.8rem; font-weight: bold;">Connecting...</span>
+                <span id="sync-status" style="font-size: 0.8rem; font-weight: bold;">
+                    <span class="status-dot" id="sync-dot"></span> <span id="sync-text">Connecting...</span>
+                </span>
             </div>
             <div class="admin-profile">
                 <span class="badge-admin" id="branch-label">Megamall Branch</span>
@@ -101,8 +111,27 @@
 
         <div class="content-padding">
             <div class="transaction-card">
-                <div class="section-header" style="margin-bottom: 20px;">
-                    <input type="text" id="txnSearch" class="search-box" style="width: 100%; max-width: 450px; padding: 12px;" placeholder="Search SI, Customer, or Barcode..." onkeyup="filterTransactions()">
+                <div class="section-header" style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                    <input type="text" id="txnSearch" class="search-box" style="width: 100%; max-width: 400px; padding: 12px; border: 1px solid #dfe6e9; border-radius: 8px;" placeholder="Search SI, Customer, or Barcode..." onkeyup="filterTransactions()">
+                    
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <select id="month-filter" class="store-dropdown">
+                            <option value="ALL">All Months</option>
+                            <option value="0">January</option>
+                            <option value="1">February</option>
+                            <option value="2">March</option>
+                            <option value="3">April</option>
+                            <option value="4">May</option>
+                            <option value="5">June</option>
+                            <option value="6">July</option>
+                            <option value="7">August</option>
+                            <option value="8">September</option>
+                            <option value="9">October</option>
+                            <option value="10">November</option>
+                            <option value="11">December</option>
+                        </select>
+                        <button class="btn-export" onclick="exportToExcel()">📥 Export Excel</button>
+                    </div>
                 </div>
 
                 <div class="data-section" style="box-shadow: none; padding: 0; overflow-x: auto;">
@@ -120,7 +149,7 @@
                             </tr>
                         </thead>
                         <tbody id="txnBody">
-                            <tr><td colspan="8" style="text-align:center; padding: 50px;">Initializing system...</td></tr>
+                            <tr><td colspan="8" style="text-align:center; padding: 50px;">🔄 Initializing system...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -140,29 +169,38 @@
             }
         };
 
+        let rawDataFromSheet = [];
+
         function changeBranch() {
             const branch = document.getElementById('branch-selector').value;
             document.getElementById('branch-label').innerText = BRANCH_CONFIG[branch].label;
-            document.getElementById('txnBody').innerHTML = '<tr><td colspan="8" style="text-align:center; padding: 50px;">🔄 Syncing branch data...</td></tr>';
+            const tbody = document.getElementById('txnBody');
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding: 50px;">🔄 Syncing branch data...</td></tr>';
+            
+            const dot = document.getElementById('sync-dot');
+            dot.style.backgroundColor = "#f1c40f";
+            document.getElementById('sync-text').innerText = "Syncing...";
+            
             loadTransactions();
         }
 
         async function loadTransactions() {
             const branch = document.getElementById('branch-selector').value;
             const SHEETS_URL = BRANCH_CONFIG[branch].url;
-            const status = document.getElementById('sync-status');
+            const syncText = document.getElementById('sync-text');
+            const dot = document.getElementById('sync-dot');
             const tbody = document.getElementById('txnBody');
             
             try {
                 const response = await fetch(`${SHEETS_URL}?action=getTransactions`);
                 let rawData = await response.json();
                 
-                rawData.shift(); // Remove header row
+                rawData.shift(); 
+                rawDataFromSheet = rawData; 
                 
                 if (!rawData || rawData.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding: 30px;">No transaction history found for this branch.</td></tr>';
-                    status.innerText = "● Empty";
-                    status.style.color = "#f39c12";
+                    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding: 30px;">No transaction history found.</td></tr>';
+                    syncText.innerText = "Empty";
                     return;
                 }
 
@@ -174,7 +212,6 @@
                     if (siInRow !== "") {
                         if (currentGroup) groups.push(currentGroup);
                         
-                        // Cashier Logic
                         let cashierName = "STAFF";
                         if (r[5] || r[10]) cashierName = "ARENAS";
                         else if (r[6] || r[11]) cashierName = "CLIMACO";
@@ -211,7 +248,6 @@
                 groups.reverse().forEach(group => {
                     useAltColor = !useAltColor;
                     const groupBg = useAltColor ? "#fdfdfd" : "#ffffff";
-
                     const mainTr = document.createElement('tr');
                     mainTr.style.backgroundColor = groupBg;
                     mainTr.style.borderTop = "2px solid #3498db"; 
@@ -245,13 +281,62 @@
                     });
                 });
 
-                status.innerText = `● ${branch} LIVE`;
-                status.style.color = "#27ae60";
+                syncText.innerText = `${branch} LIVE`;
+                dot.style.backgroundColor = "#27ae60";
             } catch (error) {
-                status.innerText = "Connection Error";
-                status.style.color = "red";
-                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:red;">Failed to fetch data. Check internet connection.</td></tr>';
+                syncText.innerText = "Connection Error";
+                dot.style.backgroundColor = "red";
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:red;">Failed to fetch data.</td></tr>';
             }
+        }
+
+        function exportToExcel() {
+            const selectedMonth = document.getElementById('month-filter').value;
+            const branchName = document.getElementById('branch-selector').value;
+            
+            if (rawDataFromSheet.length === 0) {
+                alert("Loading data, please wait...");
+                return;
+            }
+
+            const headers1 = ["DATE", "SI #", "TIN", "CUSTOMER/COMPANY NAME", "CITY ADDRESS", "PRODUCT", "", "", "", "", "SERVICE", "", "", "", "", "GROSS AMOUNT", "NET SALES", "OUTPUT TAX", "BARCODE", "ITEM NAME"];
+            const headers2 = ["", "", "", "", "", "ARENAS", "CLIMACO", "KING KING", "BUEMIO", "BROZO", "ARENAS", "CLIMACO", "KING KING", "BUEMIO", "BROZO", "", "", "", "", ""];
+
+            const excelData = [headers1, headers2];
+            let currentMonthMatch = false;
+
+            rawDataFromSheet.forEach(r => {
+                if (r[0]) {
+                    const dateObj = new Date(r[0]);
+                    currentMonthMatch = (selectedMonth === "ALL" || dateObj.getMonth().toString() === selectedMonth);
+                }
+                if (currentMonthMatch) {
+                    excelData.push([
+                        r[0] ? new Date(r[0]).toLocaleDateString('en-GB', {day:'numeric', month:'short'}) : "", 
+                        r[1] || "", r[2] || "", r[3] || "", r[4] || "",
+                        r[5] || "", r[6] || "", r[7] || "", r[8] || "", r[9] || "",
+                        r[10] || "", r[11] || "", r[12] || "", r[13] || "", r[14] || "",
+                        r[15] || "", r[16] || "", r[17] || "", r[18] || "", r[19] || ""
+                    ]);
+                }
+            });
+
+            if (excelData.length === 2) {
+                alert("No records for this month.");
+                return;
+            }
+
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet(excelData);
+            ws['!merges'] = [
+                { s: { r: 0, c: 5 }, e: { r: 0, c: 9 } },
+                { s: { r: 0, c: 10 }, e: { r: 0, c: 14 } }
+            ];
+            ws['!cols'] = [{wch: 10}, {wch: 10}, {wch: 15}, {wch: 30}, {wch: 25}];
+
+            XLSX.utils.book_append_sheet(wb, ws, "Transactions");
+            const monthText = document.getElementById('month-filter').options[document.getElementById('month-filter').selectedIndex].text;
+            XLSX.writeFile(wb, `Sales_Export_${branchName}_${monthText}.xlsx`);
         }
 
         function filterTransactions() {

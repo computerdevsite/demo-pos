@@ -18,7 +18,7 @@
 
         /* SIDEBAR */
         .sidebar {
-            width: var(--sidebar-width);
+            width: 350px;
             background-color: var(--primary);
             color: white;
             display: flex;

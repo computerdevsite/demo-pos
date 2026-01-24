@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Warehouse Direct Entry</title>
+    <link href="css/admin.css" rel="stylesheet">
+    <style>
+        .delivery-grid { display: grid; grid-template-columns: 380px 1fr; gap: 20px; padding: 20px; }
+        .entry-card, .batch-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .batch-card { display: flex; flex-direction: column; min-height: 550px; }
+        .table-container { flex-grow: 1; overflow-y: auto; margin-top: 15px; }
+        .delivery-table { width: 100%; border-collapse: collapse; }
+        .delivery-table th { position: sticky; top: 0; background: #2c3e50; color: white; padding: 12px; text-align: left; }
+        .delivery-table td { padding: 12px 10px; border-bottom: 1px solid #eee; }
+        .upload-section { border-top: 2px solid #eee; padding-top: 15px; margin-top: 10px; }
+        
+        .btn-direct { width: 100%; padding: 15px; background: #2980b9; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 1rem; transition: 0.3s; }
+        .btn-direct:hover { background: #21618c; }
+        .status-badge { font-size: 0.8rem; padding: 4px 8px; border-radius: 12px; background: #eee; }
+        .barcode-tag { font-family: 'Courier New', monospace; font-weight: bold; color: #e67e22; background: #fdf2e9; padding: 2px 6px; border-radius: 4px; border: 1px solid #fab1a0; }
+        
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: 600; color: #2c3e50; }
+        .form-group input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <div class="sidebar-brand">ADMIN PANEL</div>
+        <div class="sidebar-menu">
+            <a href="admin.html" class="menu-link"><i>📊</i> Dashboard</a>
+            <a href="stock_transfer.html" class="menu-link active"><i>📥</i> Warehouse Direct Entry</a>
+            <a href="stock_management.html" class="menu-link"><i>🏢</i> Inventory Master</a>
+            <a href="index.html" class="menu-link" style="margin-top: auto; color: #ff5e57;"><i>🚪</i> Logout</a>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="top-nav">
+            <div style="font-weight: 600; color: #2980b9; display: flex; align-items: center; gap: 10px;">
+                WAREHOUSE INVENTORY UPDATE <span id="sync-status" class="status-badge">Ready</span>
+            </div>
+            <div class="admin-profile"><span class="badge-admin">System Admin</span></div>
+        </div>
+
+        <div class="delivery-grid">
+            <div class="entry-card">
+                <h3 style="margin-top:0; color: #2980b9;">Direct Stock In</h3>
+                
+                <div class="form-group">
+                    <label>Item Description</label>
+                    <input type="text" id="dr_name" list="inventory-data" placeholder="Search item..." onchange="autoFillPrice()" onkeypress="handleEnter(event, 'dr_price')">
+                    <datalist id="inventory-data"></datalist>
+                </div>
+
+                <div class="form-group">
+                    <label>Unique Barcode / Serial</label>
+                    <input type="text" id="dr_barcode" placeholder="Scan unit barcode..." autofocus onkeypress="handleBarcodeEntry(event)">
+                </div>
+
+                <div class="form-group">
+                    <label>Unit Price</label>
+                    <input type="number" id="dr_price" placeholder="0.00" onkeypress="handleEnter(event, 'dr_barcode')">
+                </div>
+
+                <div style="background: #ebf5fb; padding: 15px; border-radius: 6px; border-left: 4px solid #2980b9; margin-top: 20px;">
+                    <small style="color: #555; line-height: 1.4; display: block;">
+                        <strong>Admin Quick Note:</strong><br>
+                        Dahil ikaw ang Admin, ang pag-click sa "Update Inventory" ay **direktang magdadagdag** ng stocks sa database nang hindi na dumadaan sa approval sheet.
+                    </small>
+                </div>
+            </div>
+
+            <div class="batch-card">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <h3 style="margin:0;">Pending Update Queue</h3>
+                    <button onclick="clearQueue()" style="background: none; border: 1px solid #ccc; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.7rem;">Clear List</button>
+                </div>
+                
+                <div class="table-container">
+                    <table class="delivery-table">
+                        <thead>
+                            <tr>
+                                <th>Item Name</th>
+                                <th>Barcode</th>
+                                <th>Price</th>
+                                <th style="text-align: center;">Qty</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="batch-body"></tbody>
+                    </table>
+                </div>
+
+                <div class="upload-section">
+                    <div style="display:flex; justify-content: space-between; margin-bottom: 10px; font-weight: 600;">
+                        <span>UNITS TO ADD: <span id="summary-qty">0</span></span>
+                    </div>
+                    <button class="btn-direct" id="btn-submit" onclick="processDirectUpdate()">💾 DIRECT UPDATE INVENTORY</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycby0kOnov5ywlW5XY-E-qfG8nrBSGc_2-iTzjHYoYXt9o2zsFa7hlJ9-Fmrkby8MSF9qnQ/exec";
+
+        let inventoryMaster = []; 
+        let deliveryBatch = []; 
+
+        window.onload = function() {
+            document.getElementById('sync-status').innerText = "Syncing with Master List...";
+            fetch(WEB_APP_URL + "?action=getAdminData")
+                .then(res => res.json())
+                .then(data => {
+                    inventoryMaster = data.inventory || data; 
+                    loadDatalist();
+                    document.getElementById('sync-status').innerText = "Online & Synced";
+                })
+                .catch(() => document.getElementById('sync-status').innerText = "Offline Mode");
+        };
+
+        function loadDatalist() {
+            const list = document.getElementById('inventory-data');
+            const uniqueNames = [...new Set(inventoryMaster.map(item => item.name))];
+            list.innerHTML = uniqueNames.map(name => `<option value="${name}">`).join('');
+        }
+
+        function autoFillPrice() {
+            const name = document.getElementById('dr_name').value;
+            const match = inventoryMaster.find(i => i.name === name);
+            if (match) document.getElementById('dr_price').value = match.price;
+        }
+
+        function handleBarcodeEntry(event) {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                const barcode = document.getElementById('dr_barcode').value.trim();
+                const name = document.getElementById('dr_name').value.trim();
+                const price = parseFloat(document.getElementById('dr_price').value) || 0;
+                
+                if (!name) { alert("Please select an Item Name first."); return; }
+
+                if (barcode) {
+                    // DUPLICATE CHECKER: Check sa current table list
+                    const isDuplicateInQueue = deliveryBatch.find(i => i.barcode === barcode);
+                    // DUPLICATE CHECKER: Check sa mismong database (Google Sheets)
+                    const isDuplicateInDatabase = inventoryMaster.find(i => i.barcode.toString() === barcode);
+
+                    if (isDuplicateInQueue) {
+                        alert("Duplicate barcode: Already in the current list!");
+                    } else if (isDuplicateInDatabase) {
+                        alert("Duplicate alert: This barcode already exists in the Inventory database!");
+                    } else {
+                        deliveryBatch.unshift({ 
+                            action: "directWarehouseUpdate", 
+                            name: name, 
+                            barcode: barcode, 
+                            qty: 1, 
+                            price: price,
+                            store: "WAREHOUSE",
+                            status: "COMPLETED"
+                        });
+                        renderTable();
+                    }
+                    document.getElementById('dr_barcode').value = ""; 
+                }
+            }
+        }
+
+        function handleEnter(event, nextId) {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                document.getElementById(nextId).focus();
+            }
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('batch-body');
+            tbody.innerHTML = deliveryBatch.map((item, index) => `
+                <tr>
+                    <td>${item.name}</td>
+                    <td><span class="barcode-tag">${item.barcode}</span></td>
+                    <td>₱${item.price.toLocaleString()}</td>
+                    <td style="text-align:center;">1</td>
+                    <td style="text-align:right;">
+                        <button onclick="removeLine(${index})" style="color:#ff7675; background:none; border:none; cursor:pointer;">✕</button>
+                    </td>
+                </tr>`).join('');
+            document.getElementById('summary-qty').innerText = deliveryBatch.length;
+        }
+
+        function removeLine(i) { deliveryBatch.splice(i, 1); renderTable(); }
+        function clearQueue() { if(confirm("Clear list?")) { deliveryBatch = []; renderTable(); } }
+
+        async function processDirectUpdate() {
+            if (deliveryBatch.length === 0) return alert("Queue is empty!");
+            
+            if (!confirm(`Are you sure? This will DIRECTLY update the inventory for ${deliveryBatch.length} items.`)) return;
+
+            const btn = document.getElementById('btn-submit');
+            btn.disabled = true;
+            btn.innerText = "UPDATING DATABASE...";
+
+            try {
+                await fetch(WEB_APP_URL, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "text/plain;charset=utf-8",
+                    },
+                    body: JSON.stringify(deliveryBatch)
+                });
+
+                alert("SUCCESS: Inventory updated successfully!");
+                // I-update ang local master list para hindi na kailangan mag-refresh para sa bagong duplicate check
+                inventoryMaster = [...inventoryMaster, ...deliveryBatch];
+                deliveryBatch = [];
+                renderTable();
+            } catch (err) {
+                alert("Database Connection Error.");
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "💾 DIRECT UPDATE INVENTORY";
+            }
+        }
+    </script>
+</body>
+</html>
