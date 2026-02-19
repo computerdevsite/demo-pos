@@ -215,8 +215,8 @@
                 <i>✅</i> Pending Approvals <span class="sidebar-badge" id="main-badge">0</span>
             </a>
             <a href="smmg_transactions.html" class="menu-link"><i>💸</i> Transactions</a>
+            <a href="transfer.html" class="menu-link"><i>🔄</i> Stock Transfer</a>
             <a href="stock_management.html" class="menu-link active"><i>📦</i> Stock Management</a>
-            <a href="#" class="menu-link"><i>📋</i> Inventory Reports</a>
             <a href="index.html" class="menu-link" style="margin-top: auto; color: #ff5e57;"><i>🚪</i> Logout</a>
         </div>
     </div>
@@ -226,6 +226,7 @@
             <div style="display: flex; align-items: center;">
                 <h3 style="color: var(--text-dark); margin: 0;">Inventory:</h3>
                 <select id="branch-selector" class="store-dropdown" onchange="changeBranch()">
+                    <option value="WAREHOUSE">🏢 WAREHOUSE MASTER</option>
                     <option value="MEGAMALL" selected>SM MEGAMALL</option>
                     <option value="NORTH_EDSA">SM NORTH EDSA</option>
                 </select>
@@ -271,6 +272,10 @@
     <script>
     // CONFIGURATION
     const BRANCH_CONFIG = {
+            'WAREHOUSE': {
+                url: "https://script.google.com/macros/s/AKfycbyAFoBQbe9NMq2IYVjqtCzQ3NJTsUEGDlb1uHQ1q483YNRInhI78aXPNWTLzn9oR6EmLQ/exec", // Palitan mo ito ng Warehouse Script URL
+                label: "Warehouse Master"
+            },
             'MEGAMALL': {
                 url: "https://script.google.com/macros/s/AKfycbwwkcQnmXYG_E3Z9rJGyZ9dlluJ9nPFs9GeWZt211ZyEbN0wxHf9MFjXRE6NLh0fh0t/exec",
                 label: "Megamall Branch"
@@ -298,11 +303,29 @@
         const status = document.getElementById('sync-status');
         
         try {
-            const response = await fetch(SHEETS_URL + "?action=summary");
+            // Warehouse usually uses 'getAdminData' to get inventory, branches use 'summary'
+            const actionParam = (branch === 'WAREHOUSE') ? "getAdminData" : "summary";
+            
+            const response = await fetch(SHEETS_URL + "?action=" + actionParam);
             const data = await response.json();
             
-            // Suportahan kung Array agad ang response o may .inventory property
-            localStockData = Array.isArray(data) ? data : (data.inventory || []);
+            // Handle different data formats between Warehouse and Branch scripts
+            if (branch === 'WAREHOUSE') {
+                localStockData = data.inventory || [];
+                // Reformat Warehouse data to match table (since it doesn't have 'quantity' property by default in summary mode)
+                // We group it here if it's raw inventory
+                const summaryMap = {};
+                localStockData.forEach(item => {
+                    const name = item.name || "Unknown";
+                    if (!summaryMap[name]) {
+                        summaryMap[name] = { item_name: name, quantity: 0, category: 'Warehouse Stock' };
+                    }
+                    summaryMap[name].quantity += 1;
+                });
+                localStockData = Object.values(summaryMap);
+            } else {
+                localStockData = Array.isArray(data) ? data : (data.inventory || []);
+            }
             
             renderTable(localStockData);
             status.innerText = "● Connected";

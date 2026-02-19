@@ -210,3 +210,8 @@
         tr:hover { background: #f9f9f9; }
         .search-box { padding: 10px; width: 300px; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 20px; }
         .status-badge { padding: 4px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; background: #e1f5fe; color: #0288d1; }
+		
+		/* LAHAT NG INPUT AT TEXTAREA AY MAGIGING CAPITAL HABANG NAG-AALAY */
+		input[type="text"] {
+		text-transform: uppercase;
+		}

@@ -82,12 +82,11 @@
         <div class="sidebar-menu">
             <a href="admin.html" class="menu-link"><i>📊</i> Dashboard</a>
             <a href="pending.html" class="menu-link">
-                <i>✅</i> Pending Approvals <span class="sidebar-badge" id="main-badge">0</span>
+                <i>✅</i> Pending Approvals <span class="sidebar-badge" id="main-badge"></span>
             </a>
             <a href="smmg_transactions.html" class="menu-link active"><i>💸</i> Transactions</a>
-            <a href="stock_transfer.html" class="menu-link"><i>🔄</i> Stock Transfer</a>
+            <a href="transfer.html" class="menu-link"><i>🔄</i> Stock Transfer</a>
             <a href="stock_management.html" class="menu-link"><i>📦</i> Stock Management</a>
-            <a href="inventory_reports.html" class="menu-link"><i>📋</i> Inventory Reports</a>
             <a href="index.html" class="menu-link" style="margin-top: auto; color: #ff5e57;"><i>🚪</i> Logout</a>
         </div>
     </div>
@@ -219,6 +218,10 @@
                         else if (r[8] || r[13]) cashierName = "BUEMIO";
                         else if (r[9] || r[14]) cashierName = "BROZO";
 
+                        // CLEANUP LOGIC FOR COLUMN P (TOTAL AMOUNT)
+                        const rawTotal = String(r[15] || "0").replace(/[₱,]/g, '').trim();
+                        const parsedTotal = parseFloat(rawTotal) || 0;
+
                         currentGroup = {
                             main: {
                                 date: r[0] ? new Date(r[0]).toLocaleDateString() : "---",
@@ -226,14 +229,15 @@
                                 tin: r[2] || "---",
                                 name: r[3] || "---",
                                 address: r[4] || "---",
-                                total: r[15] ? '₱' + parseFloat(r[15]).toLocaleString(undefined, {minimumFractionDigits: 2}) : "₱0.00",
+                                total: '₱' + parsedTotal.toLocaleString(undefined, {minimumFractionDigits: 2}),
                                 cashier: cashierName,
                                 barcode: r[18] || "---",
                                 itemName: r[19] || "---"
                             },
                             subItems: []
                         };
-                    } else if (currentGroup && (r[18] || r[19])) {
+                    } else if (currentGroup && (r[18] || r[19] || r[15])) {
+                        // Support adding Column P values from sub-items if present
                         currentGroup.subItems.push({
                             barcode: r[18] || "---",
                             itemName: r[19] || "---"

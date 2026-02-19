@@ -46,7 +46,6 @@
 
         .admin-input:focus { border-color: #3498db; background: #fff; }
 
-        /* Error state kapag hindi nahanap ang barcode */
         .input-error {
             border-color: #e74c3c !important;
             box-shadow: 0 0 5px rgba(231, 76, 60, 0.3);
@@ -126,233 +125,237 @@
 </head>
 <body>
 
-    <div class="sidebar">
-        <div class="sidebar-brand">ADMIN PANEL</div>
-        <div class="sidebar-menu">
-            <a href="admin.html" class="menu-link"><i>📊</i> Dashboard</a>
-            <a href="pending.html" class="menu-link">
-                <i>✅</i> Pending Approvals <span class="sidebar-badge" id="main-badge">0</span>
+<div class="sidebar">
+    <div class="sidebar-brand">ADMIN PANEL</div>
+    <div class="sidebar-menu">
+        <a href="admin.html" class="menu-link"><i>📊</i> Dashboard</a>
+        <a href="pending.html" class="menu-link">
+                <i>✅</i> Pending Approvals <span class="sidebar-badge" id="main-pending-badge"></span>
             </a>
-            <a href="smmg_transactions.html" class="menu-link"><i>💸</i> Transactions</a>
-            <a href="stock_transfer.html" class="menu-link active"><i>🔄</i> Stock Transfer</a>
-            <a href="stock_management.html" class="menu-link"><i>📦</i> Stock Management</a>
-            <a href="index.html" class="menu-link" style="margin-top: auto; color: #ff5e57;"><i>🚪</i> Logout</a>
+        <a href="smmg_transactions.html" class="menu-link"><i>💸</i> Transactions</a>
+        <a href="transfer.html" class="menu-link"><i>🔄</i> Stock Transfer</a>
+        <a href="stock_management.html" class="menu-link"><i>📦</i> Stock Management</a>
+        <a href="index.html" class="menu-link" style="margin-top: auto; color: #ff5e57;"><i>🚪</i> Logout</a>
+    </div>
+</div>
+
+<div class="main-container">
+    <div class="top-nav">
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <h3 style="color: var(--text-dark); margin: 0;">Stock Transfer Control</h3>
+            <span id="sync-status" style="font-size: 0.8rem; font-weight: bold;">
+                <span class="status-dot"></span> Connecting...
+            </span>
+        </div>
+        <div class="admin-profile">
+            <span class="badge-admin">HQ Inventory</span>
         </div>
     </div>
 
-    <div class="main-container">
-        <div class="top-nav">
-            <div style="display: flex; align-items: center; gap: 10px;">
-                <h3 style="color: var(--text-dark); margin: 0;">Stock Transfer Control</h3>
-                <span id="sync-status" style="font-size: 0.8rem; font-weight: bold;">
-                    <span class="status-dot"></span> Connecting...
-                </span>
-            </div>
-            <div class="admin-profile">
-                <span class="badge-admin">HQ Inventory</span>
-            </div>
-        </div>
-
-        <div class="content-padding">
-            <div class="transfer-card">
-                <div class="form-section">
-                    <div>
-                        <div class="input-group">
-                            <label>Transfer to Branch (Store)</label>
-                            <select id="target-branch" class="admin-select">
-                                <option value="" disabled selected>-- Select Store --</option>
-                                <option value="SM NORTH EDSA">SM NORTH EDSA</option>
-                                <option value="SM MEGAMALL">SM MEGAMALL</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div>
-                        <div class="input-group">
-                            <label>Scan Item Barcode (Press Enter)</label>
-                            <input type="text" id="item-barcode" class="admin-input" placeholder="Scan or type barcode..." onkeydown="handleBarcodeKey(event)" oninput="validateOnType()" autofocus>
-                            <span id="item-display-name"></span>
-                        </div>
-                    </div>
+    <div class="content-padding">
+        <div class="transfer-card">
+            <div class="form-section">
+                <div class="input-group">
+                    <label>Transfer to Branch (Store)</label>
+                    <select id="target-branch" class="admin-select">
+                        <option value="" disabled selected>-- Select Store --</option>
+                        <option value="SM NORTH EDSA">SM NORTH EDSA</option>
+                        <option value="SM MEGAMALL">SM MEGAMALL</option>
+                    </select>
                 </div>
 
-                <div class="transfer-table-container">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Barcode</th>
-                                <th>Item Name</th>
-                                <th style="text-align: center;">Price</th>
-                                <th style="text-align: center;">Qty</th>
-                                <th style="text-align: center;">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody id="transfer-body">
-                            </tbody>
-                    </table>
+                <div class="input-group">
+                    <label>Scan Item Barcode (Press Enter)</label>
+                    <input type="text" id="item-barcode" class="admin-input"
+                           placeholder="Scan or type barcode..."
+                           onkeydown="handleBarcodeKey(event)"
+                           oninput="validateOnType()" autofocus>
+                    <span id="item-display-name"></span>
                 </div>
-
-                <button class="btn-submit-transfer" id="btn-submit" onclick="confirmTransfer()">
-                    🚀 PROCESS STOCK TRANSFER
-                </button>
             </div>
+
+            <div class="transfer-table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Barcode</th>
+                            <th>Item Name</th>
+                            <th style="text-align: center;">Price</th>
+                            <th style="text-align: center;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="transfer-body"></tbody>
+                </table>
+            </div>
+
+            <button class="btn-submit-transfer" id="btn-submit" onclick="confirmTransfer()">
+                🚀 PROCESS STOCK TRANSFER
+            </button>
         </div>
     </div>
+</div>
 
-    <script>
-        const HQ_SOURCE_URL = "https://script.google.com/macros/s/AKfycby0kOnov5ywlW5XY-E-qfG8nrBSGc_2-iTzjHYoYXt9o2zsFa7hlJ9-Fmrkby8MSF9qnQ/exec";
-        let inventory = [];
-        let transferList = [];
+<script>
+// I-sigurado na ito ang URL ng iyong Warehouse Master Script
+const HQ_SOURCE_URL = "https://script.google.com/macros/s/AKfycby0kOnov5ywlW5XY-E-qfG8nrBSGc_2-iTzjHYoYXt9o2zsFa7hlJ9-Fmrkby8MSF9qnQ/exec";
+let inventory = [];
+let transferList = [];
 
-        window.onload = fetchInventory;
+window.onload = fetchInventory;
 
-        async function fetchInventory() {
-            const status = document.getElementById('sync-status');
-            try {
-                // Kumukuha ng data base sa Column A, B, C ng Inventory
-                const response = await fetch(`${HQ_SOURCE_URL}?action=getAdminData`);
-                const result = await response.json();
-                inventory = Array.isArray(result) ? result : (result.inventory || []);
-                
-                status.innerHTML = '<span class="status-dot status-online"></span> HQ Database Linked';
-                status.style.color = "#27ae60";
-            } catch (error) {
-                status.innerHTML = '<span class="status-dot status-offline"></span> Connection Error';
-                status.style.color = "#e74c3c";
-            }
+async function fetchInventory() {
+    const status = document.getElementById('sync-status');
+    try {
+        const response = await fetch(`${HQ_SOURCE_URL}?action=getAdminData`);
+        const result = await response.json();
+        inventory = Array.isArray(result) ? result : (result.inventory || []);
+        status.innerHTML = '<span class="status-dot status-online"></span> HQ Database Linked';
+        status.style.color = "#27ae60";
+    } catch {
+        status.innerHTML = '<span class="status-dot status-offline"></span> Connection Error';
+        status.style.color = "#e74c3c";
+    }
+}
+
+function validateOnType() {
+    const input = document.getElementById('item-barcode');
+    const display = document.getElementById('item-display-name');
+    const val = input.value.trim();
+
+    if (!val) {
+        display.innerText = "";
+        input.classList.remove('input-error');
+        return;
+    }
+
+    const item = inventory.find(i => String(i.barcode).trim() === val);
+    if (item) {
+        display.innerText = `Found: ${item.name}`;
+        display.className = "text-success";
+        input.classList.remove('input-error');
+    } else {
+        display.innerText = "Searching barcode...";
+        display.className = "";
+    }
+}
+
+function handleBarcodeKey(event) {
+    if (event.key === "Enter") {
+        event.preventDefault();
+        searchInventory();
+    }
+}
+
+function searchInventory() {
+    const input = document.getElementById('item-barcode');
+    const display = document.getElementById('item-display-name');
+    const val = input.value.trim();
+    if (!val) return;
+
+    const item = inventory.find(i => String(i.barcode).trim() === val);
+
+    if (item) {
+        if (transferList.some(i => String(i.barcode) === String(val))) {
+            alert("⚠️ Ang item na ito ay nasa listahan na!");
+            input.value = "";
+            display.innerText = "";
+            return;
         }
 
-        function validateOnType() {
-            const input = document.getElementById('item-barcode');
-            const display = document.getElementById('item-display-name');
-            const val = input.value.trim();
+        transferList.push({ ...item });
+        updateTable();
 
-            if (!val) {
-                display.innerText = "";
-                input.classList.remove('input-error');
-                return;
-            }
+        input.value = "";
+        display.innerText = `✓ Added: ${item.name}`;
+        display.className = "text-success";
+        input.classList.remove('input-error');
+    } else {
+        input.classList.add('input-error');
+        display.innerText = "✗ Unknown Barcode - Not in Inventory";
+        display.className = "text-danger";
+    }
+}
 
-            const item = inventory.find(i => String(i.barcode).trim() === val);
-            if (item) {
-                display.innerText = `Found: ${item.name}`;
-                display.className = "text-success";
-                input.classList.remove('input-error');
-            } else {
-                display.innerText = "Searching barcode...";
-                display.className = "";
-            }
-        }
+function updateTable() {
+    const tbody = document.getElementById('transfer-body');
+    tbody.innerHTML = "";
 
-        function handleBarcodeKey(event) {
-            if (event.key === "Enter") {
-                event.preventDefault();
-                searchInventory();
-            }
-        }
+    transferList.forEach(item => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+            <td>${item.barcode}</td>
+            <td style="font-weight:600;">${item.name}</td>
+            <td style="text-align:center;">₱${parseFloat(item.price).toLocaleString()}</td>
+            <td style="text-align:center;">
+                <button class="remove-btn" onclick="removeItem('${item.barcode}')">REMOVE</button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+}
 
-        function searchInventory() {
-            const input = document.getElementById('item-barcode');
-            const display = document.getElementById('item-display-name');
-            const val = input.value.trim();
+function removeItem(barcode) {
+    if (!confirm("Sigurado ka bang tatanggalin ang item na ito?")) return;
 
-            if (!val) return;
+    transferList = transferList.filter(item =>
+        String(item.barcode) !== String(barcode)
+    );
 
-            const item = inventory.find(i => String(i.barcode).trim() === val);
+    updateTable();
+}
 
-            if (item) {
-                // Bawal ang duplicate sa listahan
-                if (transferList.some(i => String(i.barcode).trim() === val)) {
-                    alert("⚠️ Ang item na ito ay nasa listahan na!");
-                    input.value = "";
-                    display.innerText = "";
-                    return;
-                }
+/**
+ * UPDATED CONFIRM TRANSFER:
+ * Dynamic payload with qty: 1 for unique barcodes and direct sync.
+ */
+async function confirmTransfer() {
+    const store = document.getElementById('target-branch').value;
+    const btn = document.getElementById('btn-submit');
 
-                transferList.push({ ...item, qty: 1 });
-                updateTable();
-                
-                input.value = "";
-                display.innerText = `✓ Added: ${item.name}`;
-                display.className = "text-success";
-                input.classList.remove('input-error');
-            } else {
-                input.classList.add('input-error');
-                display.innerText = "✗ Unknown Barcode - Not in Inventory";
-                display.className = "text-danger";
-            }
-        }
+    if (!store) return alert("Pumili muna ng Target Store!");
+    if (transferList.length === 0) return alert("Walang items sa listahan!");
 
-        function updateTable() {
-            const tbody = document.getElementById('transfer-body');
-            tbody.innerHTML = transferList.map(item => `
-                <tr>
-                    <td>${item.barcode}</td>
-                    <td style="font-weight:600;">${item.name}</td>
-                    <td style="text-align:center;">₱${parseFloat(item.price).toLocaleString()}</td>
-                    <td style="text-align:center;">
-                        <input type="number" value="${item.qty}" min="1" 
-                               style="width:65px; text-align:center; padding:5px; border-radius:4px; border:1px solid #ddd;" 
-                               onchange="updateQty('${item.barcode}', this.value)">
-                    </td>
-                    <td style="text-align:center;">
-                        <button class="remove-btn" onclick="removeItem('${item.barcode}')">REMOVE</button>
-                    </td>
-                </tr>
-            `).join('');
-        }
+    if (!confirm(`Ipadala ang ${transferList.length} items sa Approval Sheet para sa ${store}?`)) return;
 
-        function updateQty(barcode, qty) {
-            const item = transferList.find(i => i.barcode === barcode);
-            if (item) item.qty = parseInt(qty) || 1;
-        }
+    btn.disabled = true;
+    btn.innerText = "🚀 SENDING DATA...";
 
-        function removeItem(barcode) {
-            transferList = transferList.filter(i => i.barcode !== barcode);
-            updateTable();
-        }
+    // Pinatitibay ang structure ng data na ipapadala
+    const payload = transferList.map(item => ({
+        action: "addToApproval",
+        barcode: String(item.barcode).trim(),
+        itemName: item.name,
+        price: item.price,
+        store: store, 
+        timestamp: new Date().toLocaleString(),
+        qty: 1 // Dahil unique barcode, automatic 1 per row
+    }));
 
-        async function confirmTransfer() {
-            const store = document.getElementById('target-branch').value;
-            const btn = document.getElementById('btn-submit');
+    try {
+        // I-send ang POST request sa Master Script
+        await fetch(HQ_SOURCE_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
 
-            if (!store) return alert("Pumili muna ng Target Store!");
-            if (transferList.length === 0) return alert("Walang items sa listahan!");
+        alert(`SUCCESS! Data sent to ${store} Approval.`);
+        transferList = [];
+        updateTable();
+        document.getElementById('item-display-name').innerText = "";
+        
+        // I-refresh ang inventory list
+        fetchInventory(); 
 
-            if (!confirm(`Ipadala ang ${transferList.length} items sa Approval Sheet para sa ${store}?`)) return;
-
-            btn.disabled = true;
-            btn.innerText = "🚀 SENDING DATA...";
-
-            // Inihahanda ang data para sa Approval Sheet Columns: BARCODE, ITEM NAME, PRICE, STORE, TIME STAMP
-            const payload = transferList.map(item => ({
-                action: "addToApproval",
-                barcode: item.barcode,
-                itemName: item.name,
-                price: item.price,
-                store: store,
-                timestamp: new Date().toLocaleString()
-            }));
-
-            try {
-                await fetch(HQ_SOURCE_URL, {
-                    method: 'POST',
-                    mode: 'no-cors', // Mahalaga para sa Google Apps Script POST
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                alert("SUCCESS! Data sent to Approval Tab.");
-                transferList = [];
-                updateTable();
-                document.getElementById('item-display-name').innerText = "";
-            } catch (error) {
-                alert("Error: Hindi maipadala ang data. I-check ang internet o Script URL.");
-            } finally {
-                btn.disabled = false;
-                btn.innerText = "🚀 PROCESS STOCK TRANSFER";
-            }
-        }
-    </script>
+    } catch (error) {
+        console.error("Transfer Error:", error);
+        alert("Error: Hindi maipadala ang data.");
+    } finally {
+        btn.disabled = false;
+        btn.innerText = "🚀 PROCESS STOCK TRANSFER";
+    }
+}
+</script>
 </body>
 </html>

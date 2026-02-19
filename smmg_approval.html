@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SM MEGAMALL - Receive Warehouse Delivery</title>
+    <link href="css/pos.css" rel="stylesheet">
+    <style>
+        body { display: flex; min-height: 100vh; background-color: #f4f7f6; overflow-x: hidden; }
+        .main-content { flex: 1; display: flex; flex-direction: column; }
+        
+        .sticky-search-header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: #fff;
+            padding: 15px 20px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            border-bottom: 2px solid #2980b9;
+        }
+
+        .db-status-container { display: flex; align-items: center; gap: 6px; font-size: 0.75rem; font-weight: bold; }
+        .status-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; background: #95a5a6; }
+        .status-online { background: #2ecc71; box-shadow: 0 0 8px #2ecc71; }
+        .status-offline { background: #e74c3c; box-shadow: 0 0 8px #e74c3c; }
+        .status-label { color: #666; text-transform: uppercase; letter-spacing: 0.5px; }
+
+        .delivery-container { padding: 20px; flex: 1; }
+        .data-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); color: #333; margin-bottom: 20px; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th { text-align: left; padding: 12px; border-bottom: 2px solid #eee; background-color: #2c3e50; color: white; position: sticky; top: 135px; z-index: 10; }
+        td { padding: 12px; border-bottom: 1px solid #eee; }
+        
+        .status-pill { padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; }
+        .in-transit { background: #e3f2fd; color: #0d47a1; border: 1px solid #bbdefb; }
+        
+        .btn-receive { 
+            background: #27ae60; color: white; border: none; padding: 8px 16px; 
+            border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.75rem;
+            transition: background 0.2s;
+        }
+        .btn-receive:hover { background: #219150; }
+        .btn-bulk { background: #2980b9; margin-left: 10px; }
+        .btn-bulk:disabled { background: #ccc; cursor: not-allowed; }
+
+        .barcode-input { 
+            width: 100%; padding: 15px; border: 2px solid #ddd; border-radius: 6px; 
+            font-size: 1.2rem; outline: none; font-weight: bold;
+        }
+        
+        .log-container { 
+            max-height: 100px; overflow-y: auto; border: 1px solid #eee; 
+            padding: 8px; background: #fafafa; border-radius: 4px; font-family: monospace;
+        }
+        .log-item { padding: 5px 10px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; font-size: 0.8rem; }
+        .log-success { border-left: 4px solid #27ae60; color: #27ae60; background: #f1f8e9; }
+        .log-fail { border-left: 4px solid #e74c3c; color: #e74c3c; background: #ffebee; }
+        
+        .highlight-row { background-color: #fff9c4 !important; outline: 2px solid #ffd600; }
+        .chk-cell { width: 40px; text-align: center; }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <div class="sidebar-header">SM MEGAMALL</div>
+        <div class="sidebar-menu">
+            <a href="POS.html" class="menu-item"><i>🛒</i> Point of Sale</a>
+            <a href="transactions.html" class="menu-item"><i>📜</i> Transactions</a>
+            <a href="delivery.html" class="menu-item"><i>🚚</i> Stock Delivery</a>
+            <a href="pullout.html" class="menu-item"><i>📤</i> Stock Pull Out</a>
+            <a href="cashier_approvals.html" class="menu-item"><i>⏳</i> My Pending Stocks</a>
+            <a href="smmg_approval.html" class="menu-item active"><i>🏢</i> Receive Warehouse</a>
+            <a href="stocks.html" class="menu-item"><i>📦</i> Check Stocks</a>
+            <a href="index.html" class="menu-item" style="margin-top: auto;"><i>🚪</i> Logout</a>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="sticky-search-header">
+            <div style="display: flex; gap: 15px; align-items: flex-start;">
+                <div style="flex: 1;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                        <label style="font-weight: bold; font-size: 0.8rem; color: #666;">SCAN BARCODE (MEGAMALL ONLY):</label>
+                        <div class="db-status-container">
+                            <span id="db-indicator" class="status-dot"></span>
+                            <span id="db-text" class="status-label">Checking SMMG...</span>
+                        </div>
+                    </div>
+                    <input type="text" id="barcode-search-input" class="barcode-input" placeholder="SCAN BARCODE HERE..." autofocus>
+                </div>
+
+                <div style="flex: 1;">
+                    <div class="log-header" style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                        <label style="font-weight: bold; font-size: 0.8rem; color: #666;">RECENT SCANS <span id="not-found-counter" style="background:#e74c3c; color:white; padding:2px 8px; border-radius:10px; font-size:0.7rem;">Not Found: 0</span></label>
+                        <button style="font-size:0.65rem; color:#666; cursor:pointer; background:none; border:none; text-decoration:underline;" onclick="clearLogs()">Clear Logs</button>
+                    </div>
+                    <div class="log-container" id="tracking-log">
+                        <div id="log-placeholder" style="color: #999; text-align: center; padding: 5px;">Ready for SMMG scans...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="delivery-container">
+            <div class="data-card">
+                <div style="display:flex; justify-content: space-between; align-items: center;">
+                    <h3 style="margin:0;">Incoming Deliveries for <span style="color: #2980b9;">SMMG</span></h3>
+                    <div>
+                        <button class="btn-receive" onclick="fetchWarehouseDeliveries()">Refresh List</button>
+                        <button id="btn-approve-bulk" class="btn-receive btn-bulk" onclick="approveSelected()" disabled>Approve Selected (0)</button>
+                    </div>
+                </div>
+                
+                <table>
+                    <thead>
+                        <tr>
+                            <th class="chk-cell"><input type="checkbox" id="mark-all" onclick="toggleAll(this)"></th>
+                            <th>Barcode</th>
+                            <th>Item Description</th>
+                            <th>Origin</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="warehouse-delivery-table"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const WAREHOUSE_URL = "https://script.google.com/macros/s/AKfycby0kOnov5ywlW5XY-E-qfG8nrBSGc_2-iTzjHYoYXt9o2zsFa7hlJ9-Fmrkby8MSF9qnQ/exec";
+        const BRANCH_URL = "https://script.google.com/macros/s/AKfycbwwkcQnmXYG_E3Z9rJGyZ9dlluJ9nPFs9GeWZt211ZyEbN0wxHf9MFjXRE6NLh0fh0t/exec"; 
+
+        let currentPendingData = [];
+        let notFoundCount = 0;
+
+        function updateDBStatus(isOnline) {
+            const dot = document.getElementById('db-indicator');
+            const text = document.getElementById('db-text');
+            dot.className = isOnline ? 'status-dot status-online' : 'status-dot status-offline';
+            text.innerText = isOnline ? 'SMMG Connected' : 'SMMG Offline';
+            text.style.color = isOnline ? '#2ecc71' : '#e74c3c';
+        }
+
+        async function fetchWarehouseDeliveries() {
+            const tableBody = document.getElementById('warehouse-delivery-table');
+            tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 20px;">Loading SMMG Data...</td></tr>';
+            
+            try {
+                const response = await fetch(`${WAREHOUSE_URL}?action=getAdminData&branch=SM MEGAMALL`);
+                if (!response.ok) throw new Error();
+                const data = await response.json();
+                
+                currentPendingData = data.approvals ? data.approvals.filter(item => 
+                    item.status === "PENDING" && 
+                    (item.store === "SM MEGAMALL" || item.store === "SMMG")
+                ).map(item => ({...item, barcode: String(item.barcode).trim()})) : [];
+                
+                renderTable();
+                updateBulkButton();
+                updateDBStatus(true);
+            } catch (error) { 
+                updateDBStatus(false);
+                tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 20px; color:red;">Failed to load deliveries.</td></tr>';
+            }
+        }
+
+        function renderTable() {
+            const tableBody = document.getElementById('warehouse-delivery-table');
+            let html = "";
+            currentPendingData.forEach(item => {
+                html += `
+                    <tr id="row-${item.barcode}-${item.id}">
+                        <td class="chk-cell"><input type="checkbox" class="row-chk" data-id="${item.id}" data-barcode="${item.barcode}" data-name="${item.name}" data-price="${item.price}" onclick="updateBulkButton()"></td>
+                        <td style="font-weight: bold;">${item.barcode}</td>
+                        <td>${item.name}</td>
+                        <td><span class="status-pill in-transit">Warehouse</span></td>
+                        <td><button class="btn-receive" onclick="confirmReceipt('${item.id}', '${item.barcode}', '${item.name}', '${item.price}')">Receive</button></td>
+                    </tr>
+                `;
+            });
+            tableBody.innerHTML = html || '<tr><td colspan="5" style="text-align:center; padding: 40px;">No pending deliveries for SMMG.</td></tr>';
+        }
+
+        function toggleAll(masterChk) {
+            document.querySelectorAll('.row-chk').forEach(chk => chk.checked = masterChk.checked);
+            updateBulkButton();
+        }
+
+        function updateBulkButton() {
+            const selected = document.querySelectorAll('.row-chk:checked').length;
+            const btn = document.getElementById('btn-approve-bulk');
+            btn.innerText = `Approve Selected (${selected})`;
+            btn.disabled = selected === 0;
+        }
+
+        function clearLogs() {
+            document.getElementById('tracking-log').innerHTML = '<div id="log-placeholder" style="color: #999; text-align: center; padding: 5px;">Ready for scanning...</div>';
+            notFoundCount = 0;
+            document.getElementById('not-found-counter').innerText = `Not Found: 0`;
+        }
+
+        document.getElementById('barcode-search-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                const val = this.value.trim();
+                if (!val) return;
+                const matches = currentPendingData.filter(item => item.barcode === val);
+                const log = document.getElementById('tracking-log');
+                const placeholder = document.getElementById('log-placeholder');
+                if (placeholder) placeholder.remove();
+
+                if (matches.length > 0) {
+                    matches.forEach(m => {
+                        const row = document.getElementById(`row-${m.barcode}-${m.id}`);
+                        if (row) {
+                            row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            row.classList.add('highlight-row');
+                            row.querySelector('.row-chk').checked = true;
+                            setTimeout(() => row.classList.remove('highlight-row'), 2000);
+                        }
+                    });
+                    const logItem = document.createElement('div');
+                    logItem.className = 'log-item log-success';
+                    logItem.innerHTML = `<span>✅ ${val} Found</span> <span>${new Date().toLocaleTimeString()}</span>`;
+                    log.prepend(logItem);
+                    updateBulkButton();
+                } else {
+                    notFoundCount++;
+                    document.getElementById('not-found-counter').innerText = `Not Found: ${notFoundCount}`;
+                    const logItem = document.createElement('div');
+                    logItem.className = 'log-item log-fail';
+                    logItem.innerHTML = `<span>❌ ${val} Not in SMMG List</span> <span>${new Date().toLocaleTimeString()}</span>`;
+                    log.prepend(logItem);
+                }
+                this.value = '';
+            }
+        });
+
+        async function approveSelected() {
+            const selectedChks = document.querySelectorAll('.row-chk:checked');
+            if (!selectedChks.length || !confirm(`Confirm receipt of ${selectedChks.length} items to SMMG Inventory?`)) return;
+
+            const btn = document.getElementById('btn-approve-bulk');
+            btn.innerText = "Syncing SMMG...";
+            btn.disabled = true;
+
+            try {
+                for (let chk of selectedChks) {
+                    await processReceipt(
+                        chk.getAttribute('data-id'),
+                        chk.getAttribute('data-barcode'),
+                        chk.getAttribute('data-name'),
+                        chk.getAttribute('data-price')
+                    );
+                }
+                alert("Successfully received to SMMG Inventory.");
+                fetchWarehouseDeliveries();
+                clearLogs();
+            } catch (e) {
+                alert("Error syncing data.");
+            } finally {
+                btn.innerText = "Approve Selected";
+                btn.disabled = false;
+            }
+        }
+
+        async function confirmReceipt(itemId, barcode, name, price) {
+            if(!confirm(`Receive ${barcode} into SMMG?`)) return;
+            try {
+                await processReceipt(itemId, barcode, name, price);
+                alert("Stock successfully received by SMMG.");
+                fetchWarehouseDeliveries();
+            } catch (e) {
+                alert("Sync failed.");
+            }
+        }
+
+        async function processReceipt(id, barcode, name, price) {
+            const storeName = "SM MEGAMALL";
+
+            // 1. Mark as RECEIVED in Warehouse Database (Main Admin Sheet)
+            // Gamit ang iyong original JSON.stringify setup
+            await fetch(WAREHOUSE_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                body: JSON.stringify({ 
+                    action: "receive_from_warehouse", 
+                    id: id, 
+                    barcode: barcode,
+                    store: storeName 
+                })
+            });
+
+            // 2. Update the Inventory sheet in the SMMG BRANCH Database
+            // Gamit ang iyong original JSON.stringify setup
+            await fetch(BRANCH_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                body: JSON.stringify({ 
+                    action: "directWarehouseUpdate", 
+                    barcode: barcode, 
+                    name: name, 
+                    price: price, 
+                    qty: 1 
+                })
+            });
+            
+            return true;
+        }
+
+        window.onload = fetchWarehouseDeliveries;
+    </script>
+</body>
+</html>

@@ -1,54 +1,61 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="EN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SM MEGAMALL - POS System</title>
+    <title>SM MEGAMALL - POS SYSTEM</title>
     <link href="css/pos.css" rel="stylesheet">
+    <style>
+        /* FORCE ALL INPUTS TO DISPLAY AS CAPITAL LETTERS WHILE TYPING */
+        input[type="text"], .barcode-input {
+            text-transform: uppercase;
+        }
+    </style>
 </head>
 <body>
 
     <div class="sidebar">
         <div class="sidebar-header">SM MEGAMALL</div>
         <div class="sidebar-menu">
-            <a href="POS.html" class="menu-item active"><i>🛒</i> Point of Sale</a>
-            <a href="transactions.html" class="menu-item"><i>📜</i> Transactions</a>
-            <a href="delivery.html" class="menu-item"><i>🚚</i> Stock Delivery</a>
-            <a href="pullout.html" class="menu-item"><i>📤</i> Stock Pull Out</a>
-            <a href="cashier_approvals.html" class="menu-item"><i>⏳</i> My Pending Stocks</a>
-            <a href="stocks.html" class="menu-item"><i>📦</i> Check Stocks</a>
-            <a href="index.html" class="menu-item" style="margin-top: auto;"><i>🚪</i> Logout</a>
+            <a href="POS.html" class="menu-item active"><i>🛒</i> POINT OF SALE</a>
+            <a href="transactions.html" class="menu-item"><i>📜</i> TRANSACTIONS</a>
+            <a href="delivery.html" class="menu-item"><i>🚚</i> STOCK DELIVERY</a>
+            <a href="pullout.html" class="menu-item"><i>📤</i> STOCK PULL OUT</a>
+            <a href="cashier_approvals.html" class="menu-item"><i>⏳</i> MY PENDING STOCKS</a>
+            <a href="smmg_approval.html" class="menu-item"><i>🏢</i> Receive Warehouse</a>
+            <a href="stocks.html" class="menu-item"><i>📦</i> CHECK STOCKS</a>
+            <a href="index.html" class="menu-item" style="margin-top: auto;"><i>🚪</i> LOGOUT</a>
         </div>
     </div>
 
     <div class="main-content">
         <div class="top-bar">
-            <div style="font-weight: 600; color: var(--primary);">CASHIER TRANSACTION MODE <span id="loading-indicator">(Syncing Sheets...)</span></div>
+            <div style="font-weight: 600; color: var(--primary);">CASHIER TRANSACTION MODE <span id="loading-indicator">(SYNCING SHEETS...)</span></div>
             <div class="cashier-info">
-                <span id="active-user" style="font-size: 0.9rem; font-weight: 500;">Active User</span>
+                <span id="active-user" style="font-size: 0.9rem; font-weight: 500;">ACTIVE USER</span>
                 <span class="badge-cashier">CASHIER ROLE</span>
             </div>
         </div>
 
         <div class="pos-wrapper">
             <div class="left-panel">
-                <h3 style="margin-top:0; color: var(--primary);">Customer & Invoice Information</h3>
+                <h3 style="margin-top:0; color: var(--primary);">CUSTOMER & INVOICE INFORMATION</h3>
                 <div class="grid-3">
-                    <div class="form-group"><label>Date</label><input type="text" id="si_date" placeholder="MM/DD/YYYY"></div>
-                    <div class="form-group"><label>SI Number</label><input type="text" id="si_number" placeholder="SI-1001"></div>
+                    <div class="form-group"><label>DATE</label><input type="text" id="si_date" placeholder="MM/DD/YYYY"></div>
+                    <div class="form-group"><label>SI NUMBER</label><input type="text" id="si_number" placeholder="SI-1001"></div>
                     <div class="form-group"><label>TIN</label><input type="text" id="tin_number" placeholder="000-000-000"></div>
                 </div>
-                <div class="form-group"><label>Customer Name</label><input type="text" id="cust_name" placeholder="Name of Customer"></div>
-                <div class="form-group"><label>Address</label><input type="text" id="cust_address" placeholder="Customer Address"></div>
+                <div class="form-group"><label>CUSTOMER NAME</label><input type="text" id="cust_name" placeholder="NAME OF CUSTOMER"></div>
+                <div class="form-group"><label>ADDRESS</label><input type="text" id="cust_address" placeholder="CUSTOMER ADDRESS"></div>
 
                 <div class="barcode-section">
-                    <label style="color:var(--accent);">Scan Item Barcode</label>
+                    <label style="color:var(--accent);">SCAN ITEM BARCODE</label>
                     <div style="display:flex; gap:10px;">
                         <input type="text" id="item_barcode" class="barcode-input" oninput="searchInventory()" onkeypress="handleEnter(event)" autofocus>
                         <button onclick="addItem()" style="padding:0 20px; background:var(--accent); color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">ENTER</button>
                     </div>
                     <div style="display:grid; grid-template-columns: 2fr 1fr; gap:10px; margin-top:10px;">
-                        <input type="text" id="item_name" readonly placeholder="Item Description" style="background:#eee;">
+                        <input type="text" id="item_name" readonly placeholder="ITEM DESCRIPTION" style="background:#eee;">
                         <input type="text" id="item_price" readonly placeholder="₱ 0.00" style="background:#eee;">
                     </div>
                 </div>
@@ -62,7 +69,7 @@
                     </div>
 
                     <div class="">
-                        <label>Customer type</label>
+                        <label>CUSTOMER TYPE</label>
                         <div class="cashier-grid1">
                             <label class="cashier-opt"><input type="radio" name="customer" value="IAYC SERVICE FEE" onchange="updateUI()">IAYC</label>
                             <label class="cashier-opt"><input type="radio" name="customer" value="NON-IAYC SERVICE FEE" checked onchange="updateUI()">NON-IAYC</label>
@@ -71,7 +78,7 @@
                 </div>
 
                 <div style="margin-top: auto; padding-top: 20px;">
-                    <label>Verify Seller ID</label>
+                    <label>VERIFY SELLER ID</label>
                     <div class="cashier-grid">
                         <label class="cashier-opt"><input type="radio" name="cashier" value="ARENAS" onchange="updateUI()">ARENAS</label>
                         <label class="cashier-opt"><input type="radio" name="cashier" value="CLIMACO" onchange="updateUI()">CLIMACO</label>
@@ -83,27 +90,27 @@
             </div>
 
             <div class="right-panel">
-                <h3 style="margin:0; font-weight: 500;">Transaction Summary</h3>
-                <div style="font-size: 0.8rem; margin-top: 5px; opacity: 0.7;" id="preview-meta">Date: --- | Seller: ---</div>
+                <h3 style="margin:0; font-weight: 500;">TRANSACTION SUMMARY</h3>
+                <div style="font-size: 0.8rem; margin-top: 5px; opacity: 0.7;" id="preview-meta">DATE: --- | SELLER: ---</div>
                 
                 <div class="cart-container" id="cart-list"></div>
 
                 <div class="total-section">
                     <div class="form-group">
-                        <label style="color: #bdc3c7;">Discount (₱)</label>
+                        <label style="color: #bdc3c7;">DISCOUNT (₱)</label>
                         <input type="number" id="manual_discount" value="" oninput="updateUI()" style="background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.2); color:white;">
                     </div>
 
                     <div class="form-group">
-                        <label style="color: #bdc3c7;">Other Deductions (₱)</label>
+                        <label style="color: #bdc3c7;">OTHER DEDUCTIONS (₱)</label>
                         <input type="number" id="other_deductions" value="" oninput="updateUI()" style="background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.2); color:white;">
                     </div>
 
-                    <div class="total-row"><span>Subtotal:</span><span id="subtotal-val">₱0.00</span></div>
-                    <div class="total-row" style="color:#f1c40f;"><span>Total Deductions:</span><span id="discount-val">-₱0.00</span></div>
+                    <div class="total-row"><span>SUBTOTAL:</span><span id="subtotal-val">₱0.00</span></div>
+                    <div class="total-row" style="color:#f1c40f;"><span>TOTAL DEDUCTIONS:</span><span id="discount-val">-₱0.00</span></div>
 
                     <div class="grand-total" style="font-weight: normal; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px;">
-                        <div class="total-row" style="color:white;"><span>VATable Sales:</span><span id="VATable-val">₱0.00</span></div>
+                        <div class="total-row" style="color:white;"><span>VATABLE SALES:</span><span id="VATable-val">₱0.00</span></div>
                     </div>
 
                     <div class="grand-total" style="font-weight: normal; border-top: none; margin-top: -10px;">
@@ -115,7 +122,7 @@
                         <span id="total-val">₱0.00</span>
                     </div>
                     <button class="btn-save" onclick="processInvoice()">COMPLETE SALE</button>
-                    <button onclick="emptyCart()" style="width:100%; background:none; border:none; color:#bdc3c7; cursor:pointer; margin-top:10px; font-size:0.8rem;">Void Transaction</button>
+                    <button onclick="emptyCart()" style="width:100%; background:none; border:none; color:#bdc3c7; cursor:pointer; margin-top:10px; font-size:0.8rem;">VOID TRANSACTION</button>
                 </div>
             </div>
         </div>
@@ -139,40 +146,36 @@
             fetchInventory();
         };
 
-        // --- DATA FETCHING ---
         async function fetchInventory() {
             const indicator = document.getElementById('loading-indicator');
             if(indicator) {
                 indicator.style.display = 'inline';
-                indicator.innerText = "(Connecting...)";
+                indicator.innerText = "(CONNECTING...)";
             }
             
             try {
-                // Pinapasa ang action=getAdminData para makuha ang buong dataset kasama inventory
                 const response = await fetch(SHEETS_URL + "?action=getAdminData&t=" + new Date().getTime());
                 const result = await response.json();
                 
                 if (result.error) {
-                    if(indicator) indicator.innerText = "(" + result.error + ")";
+                    if(indicator) indicator.innerText = "(" + result.error.toUpperCase() + ")";
                 } else {
-                    // Update: Kinukuha ang inventory property mula sa unified result
                     inventory = result.inventory || []; 
                     
                     if(indicator) {
-                        indicator.innerText = "(Sheets Linked: " + inventory.length + " items)";
+                        indicator.innerText = "(SHEETS LINKED: " + inventory.length + " ITEMS)";
                         indicator.style.color = "#27ae60";
                     }
                 }
             } catch (error) {
-                console.error("Fetch Error:", error);
+                console.error("FETCH ERROR:", error);
                 if(indicator) {
-                    indicator.innerText = "(Connection Error)";
+                    indicator.innerText = "(CONNECTION ERROR)";
                     indicator.style.color = "#e74c3c";
                 }
             }
         }
 
-        // --- SEARCH & ADD ---
         function searchInventory() {
             const barcodeInput = document.getElementById('item_barcode');
             const bcValue = barcodeInput.value.trim();
@@ -181,7 +184,7 @@
             const item = inventory.find(i => String(i.barcode).trim() === bcValue);
 
             if (item) {
-                document.getElementById('item_name').value = item.name;
+                document.getElementById('item_name').value = item.name.toUpperCase();
                 document.getElementById('item_price').value = parseFloat(item.price).toFixed(2);
             } else {
                 document.getElementById('item_name').value = "";
@@ -201,15 +204,27 @@
             const name = document.getElementById('item_name').value;
             const priceStr = document.getElementById('item_price').value;
             const price = parseFloat(priceStr);
-            const barcodeValue = barcodeInput.value.trim();
+            const barcodeValue = barcodeInput.value.trim().toUpperCase();
 
             if (!name || isNaN(price)) {
                 barcodeInput.classList.add('invalid-field');
                 return;
             }
 
+            // --- CHECK FOR DUPLICATE BARCODE ---
+            const isDuplicate = cart.some(item => item.barcode === barcodeValue && item.barcode !== "SERVICE");
+            
+            if (isDuplicate) {
+                alert("DUPLICATE DETECTED: ANG ITEM/BARCODE NA ITO AY NASA SUMMARY NA!");
+                barcodeInput.value = '';
+                document.getElementById('item_name').value = '';
+                document.getElementById('item_price').value = '';
+                barcodeInput.focus();
+                return;
+            }
+
             barcodeInput.classList.remove('invalid-field');
-            cart.push({ id: Date.now(), barcode: barcodeValue, name: name, price: price, qty: 1 });
+            cart.push({ id: Date.now(), barcode: barcodeValue, name: name.toUpperCase(), price: price, qty: 1 });
             
             barcodeInput.value = '';
             document.getElementById('item_name').value = '';
@@ -218,7 +233,6 @@
             updateUI();
         }
 
-        // --- SERVICE FEE (IAYC / NON-IAYC) ---
         function handleServiceEnter(e) {
             if (e.key === "Enter") {
                 e.preventDefault();
@@ -232,19 +246,19 @@
             const feeAmount = parseFloat(feeInput.value);
             
             if (isNaN(feeAmount) || feeAmount <= 0) {
-                alert("Please enter a valid Service Fee amount.");
+                alert("PLEASE ENTER A VALID SERVICE FEE AMOUNT.");
                 return;
             }
 
             if (!selectedType) {
-                alert("Please select a Customer Type.");
+                alert("PLEASE SELECT A CUSTOMER TYPE.");
                 return;
             }
 
             cart.push({
                 id: Date.now(),
                 barcode: "SERVICE",
-                name: selectedType.value,
+                name: selectedType.value.toUpperCase(),
                 price: feeAmount,
                 qty: 1
             });
@@ -258,7 +272,6 @@
             updateUI();
         }
 
-        // --- UI UPDATES ---
         function updateUI() {
             const list = document.getElementById('cart-list');
             const disc = parseFloat(document.getElementById('manual_discount').value) || 0;
@@ -266,19 +279,19 @@
             
             const dateInput = document.getElementById('si_date').value || "---";
             const cashierInput = document.querySelector('input[name="cashier"]:checked');
-            const cashierName = cashierInput ? cashierInput.value : "---";
+            const cashierName = cashierInput ? cashierInput.value.toUpperCase() : "---";
             
-            document.getElementById('preview-meta').innerText = `Date: ${dateInput} | Seller: ${cashierName}`;
+            document.getElementById('preview-meta').innerText = `DATE: ${dateInput} | SELLER: ${cashierName}`;
 
             let sub = 0;
-            let html = '<div class="cart-row cart-header"><span>#</span><span>Barcode</span><span>Item</span><span>Price</span><span></span></div>';
+            let html = '<div class="cart-row cart-header"><span>#</span><span>BARCODE</span><span>ITEM</span><span>PRICE</span><span></span></div>';
             
             cart.forEach((item, i) => {
                 sub += item.price;
                 html += `<div class="cart-row">
                     <span>${i+1}</span>
                     <span class="cart-barcode">${item.barcode}</span>
-                    <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${item.name}</span>
+                    <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${item.name.toUpperCase()}</span>
                     <span>₱${item.price.toFixed(2)}</span>
                     <button class="btn-remove" onclick="removeItem(${item.id})">✕</button>
                 </div>`;
@@ -302,31 +315,31 @@
             list.scrollTop = list.scrollHeight;
         }
 
-        function emptyCart() { if(confirm("Void current transaction?")) { cart = []; updateUI(); } }
+        function emptyCart() { if(confirm("VOID CURRENT TRANSACTION?")) { cart = []; updateUI(); } }
 
-        // --- FINAL PROCESS INVOICE ---
         async function processInvoice() {
             const btnSave = document.querySelector('.btn-save');
             const date = document.getElementById('si_date').value;
             const si = document.getElementById('si_number').value;
             const name = document.getElementById('cust_name').value;
+            const address = document.getElementById('cust_address').value;
+            const tin = document.getElementById('tin_number').value;
             const feeInput = document.getElementById('service_fee_input');
             const cashierInput = document.querySelector('input[name="cashier"]:checked');
 
             if (!cashierInput) {
-                alert("Paki-pili muna ang pangalan ng Cashier bago i-save!");
+                alert("PAKI-PILI MUNA ANG PANGALAN NG CASHIER BAGO I-SAVE!");
                 return;
             }
 
-            // Guard para sa hindi na-enter na service fee
             if (feeInput && feeInput.value.trim() !== "" && parseFloat(feeInput.value) > 0) {
-                const confirmFee = confirm("May amount sa Service Fee box. Isasama ba ito?");
+                const confirmFee = confirm("MAY AMOUNT SA SERVICE FEE BOX. ISASAMA BA ITO?");
                 if (confirmFee) addServiceFee();
                 else { feeInput.focus(); return; }
             }
 
             if (!date || !si || !name || cart.length === 0) {
-                alert("Kulang ang data o walang laman ang cart!");
+                alert("KULANG ANG DATA O WALANG LAMAN ANG CART!");
                 return;
             }
 
@@ -339,18 +352,23 @@
             btnSave.innerText = "SAVING...";
             btnSave.disabled = true;
 
+            // Lahat ng String inputs dito ay naka .toUpperCase() para siguradong Capital sa Google Sheets
             const transactionData = {
                 action: "save_transaction", 
                 date: date,
-                si: si,
-                tin: document.getElementById('tin_number').value || "N/A",
-                name: name,
-                address: document.getElementById('cust_address').value || "N/A",
-                seller: cashierInput.value,
+                si: si.toUpperCase(),
+                tin: tin ? tin.toUpperCase() : "N/A",
+                name: name.toUpperCase(),
+                address: address ? address.toUpperCase() : "N/A",
+                seller: cashierInput.value.toUpperCase(),
                 total: totalValue.toFixed(2),
                 vatable_sales: vatableSales,
                 vat_amount: vatAmount,
-                items: cart 
+                items: cart.map(item => ({
+                    ...item,
+                    barcode: item.barcode.toUpperCase(),
+                    name: item.name.toUpperCase()
+                })) 
             };
 
             try {
@@ -361,10 +379,9 @@
                     body: JSON.stringify(transactionData)
                 });
 
-                alert("SUCCESS: Transaction Saved!");
+                alert("SUCCESS: TRANSACTION SAVED!");
                 await fetchInventory(); 
 
-                // Reset
                 const cashiers = document.querySelectorAll('input[name="cashier"]');
                 cashiers.forEach(radio => radio.checked = false);
                 cart = [];
