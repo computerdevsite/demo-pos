@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SM MEGAMALL - Receive Warehouse Delivery</title>
+    <title>SM NORTH EDSA - Receive Warehouse Delivery</title>
     <link href="css/pos.css" rel="stylesheet">
     <style>
         body { display: flex; min-height: 100vh; background-color: #f4f7f6; overflow-x: hidden; }
@@ -64,16 +64,16 @@
 <body>
 
     <div class="sidebar">
-        <div class="sidebar-header">SM MEGAMALL</div>
+        <div class="sidebar-header">SM NORTH EDSA</div>
         <div class="sidebar-menu">
-            <a href="POS.html" class="menu-item"><i>🛒</i> Point of Sale</a>
-            <a href="transactions.html" class="menu-item"><i>📜</i> Transactions</a>
-            <a href="delivery.html" class="menu-item"><i>🚚</i> Stock Delivery</a>
-            <a href="pullout.html" class="menu-item"><i>📤</i> Stock Pull Out</a>
-            <a href="cashier_approvals.html" class="menu-item"><i>⏳</i> My Pending Stocks</a>
-            <a href="smmg_approval.html" class="menu-item active"><i>🏢</i> Receive Warehouse</a>
-            <a href="stocks.html" class="menu-item"><i>📦</i> Check Stocks</a>
-            <a href="index.html" class="menu-item" style="margin-top: auto;"><i>🚪</i> Logout</a>
+            <a href="POS-SMNE.html" class="menu-item"><i>🛒</i> POINT OF SALE</a>
+            <a href="transactions_smne.html" class="menu-item"><i>📜</i> TRANSACTIONS</a>
+            <a href="delivery_smne.html" class="menu-item"><i>🚚</i> STOCK DELIVERY</a>
+            <a href="pullout_smne.html" class="menu-item"><i>📤</i> STOCK PULL OUT</a>
+            <a href="cashier_approvals_smne.html" class="menu-item"><i>⏳</i> MY PENDING STOCKS</a>
+            <a href="smne_approval.html" class="menu-item active"><i>🏢</i> Receive Warehouse</a>
+            <a href="stocks_smne.html" class="menu-item"><i>📦</i> CHECK STOCKS</a>
+            <a href="index.html" class="menu-item" style="margin-top: auto;"><i>🚪</i> LOGOUT</a>
         </div>
     </div>
 
@@ -82,10 +82,10 @@
             <div style="display: flex; gap: 15px; align-items: flex-start;">
                 <div style="flex: 1;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-                        <label style="font-weight: bold; font-size: 0.8rem; color: #666;">SCAN BARCODE (MEGAMALL ONLY):</label>
+                        <label style="font-weight: bold; font-size: 0.8rem; color: #666;">SCAN BARCODE (NORTH EDSA ONLY):</label>
                         <div class="db-status-container">
                             <span id="db-indicator" class="status-dot"></span>
-                            <span id="db-text" class="status-label">Checking SMMG...</span>
+                            <span id="db-text" class="status-label">Checking SMNE...</span>
                         </div>
                     </div>
                     <input type="text" id="barcode-search-input" class="barcode-input" placeholder="SCAN BARCODE HERE..." autofocus>
@@ -97,7 +97,7 @@
                         <button style="font-size:0.65rem; color:#666; cursor:pointer; background:none; border:none; text-decoration:underline;" onclick="clearLogs()">Clear Logs</button>
                     </div>
                     <div class="log-container" id="tracking-log">
-                        <div id="log-placeholder" style="color: #999; text-align: center; padding: 5px;">Ready for SMMG scans...</div>
+                        <div id="log-placeholder" style="color: #999; text-align: center; padding: 5px;">Ready for SMNE scans...</div>
                     </div>
                 </div>
             </div>
@@ -106,7 +106,7 @@
         <div class="delivery-container">
             <div class="data-card">
                 <div style="display:flex; justify-content: space-between; align-items: center;">
-                    <h3 style="margin:0;">Incoming Deliveries for <span style="color: #2980b9;">SMMG</span></h3>
+                    <h3 style="margin:0;">Incoming Deliveries for <span style="color: #2980b9;">SMNE</span></h3>
                     <div>
                         <button class="btn-receive" onclick="fetchWarehouseDeliveries()">Refresh List</button>
                         <button id="btn-approve-bulk" class="btn-receive btn-bulk" onclick="approveSelected()" disabled>Approve Selected (0)</button>
@@ -130,8 +130,8 @@
     </div>
 
     <script>
-        // --- CONFIGURATION ---
         const WAREHOUSE_URL = "https://script.google.com/macros/s/AKfycbyAFoBQbe9NMq2IYVjqtCzQ3NJTsUEGDlb1uHQ1q483YNRInhI78aXPNWTLzn9oR6EmLQ/exec";
+        const BRANCH_URL = "https://script.google.com/macros/s/AKfycbxKnZHePSbSMqf1G_lcnF867kEL6Idq6yNEBWiu2XtklhljQlCnloSshXHXNoHY6wUi/exec"; 
 
         let currentPendingData = [];
         let notFoundCount = 0;
@@ -140,31 +140,30 @@
             const dot = document.getElementById('db-indicator');
             const text = document.getElementById('db-text');
             dot.className = isOnline ? 'status-dot status-online' : 'status-dot status-offline';
-            text.innerText = isOnline ? 'SMMG Connected' : 'SMMG Offline';
+            text.innerText = isOnline ? 'SMNE Connected' : 'SMNE Offline';
             text.style.color = isOnline ? '#2ecc71' : '#e74c3c';
         }
 
         async function fetchWarehouseDeliveries() {
             const tableBody = document.getElementById('warehouse-delivery-table');
-            tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 20px;">Loading SMMG Data...</td></tr>';
+            tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 20px;">Loading SMNE Data...</td></tr>';
             
             try {
-                const response = await fetch(`${WAREHOUSE_URL}?action=getAdminData&branch=SM MEGAMALL&t=${new Date().getTime()}`);
+                // Binago ang branch parameter to SMNE
+                const response = await fetch(`${WAREHOUSE_URL}?action=getAdminData&branch=SMNE`);
                 if (!response.ok) throw new Error();
                 const data = await response.json();
                 
-                currentPendingData = data.approvals ? data.approvals.filter(item => {
-                    const status = String(item.status).trim().toUpperCase();
-                    const store = String(item.store).trim().toUpperCase();
-                    return status === "PENDING" && (store === "SM MEGAMALL" || store === "SMMG");
-                }).map(item => ({...item, barcode: String(item.barcode).trim()})) : [];
+                currentPendingData = data.approvals ? data.approvals.filter(item => 
+                    item.status === "PENDING"
+                ).map(item => ({...item, barcode: String(item.barcode).trim()})) : [];
                 
                 renderTable();
                 updateBulkButton();
                 updateDBStatus(true);
             } catch (error) { 
                 updateDBStatus(false);
-                tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 20px; color:red;">Failed to load. Re-check WAREHOUSE_URL or Internet.</td></tr>';
+                tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 20px; color:red;">Failed to load deliveries.</td></tr>';
             }
         }
 
@@ -174,15 +173,15 @@
             currentPendingData.forEach(item => {
                 html += `
                     <tr id="row-${item.barcode}-${item.id}">
-                        <td class="chk-cell"><input type="checkbox" class="row-chk" data-id="${item.id}" data-barcode="${item.barcode}" data-name="${item.name}" data-price="${item.price}" data-qty="${item.qty || 1}" onclick="updateBulkButton()"></td>
+                        <td class="chk-cell"><input type="checkbox" class="row-chk" data-id="${item.id}" data-barcode="${item.barcode}" data-name="${item.name}" data-price="${item.price}" onclick="updateBulkButton()"></td>
                         <td style="font-weight: bold;">${item.barcode}</td>
                         <td>${item.name}</td>
-                        <td><span class="status-pill in-transit">${item.origin || 'Warehouse'}</span></td>
-                        <td><button class="btn-receive" onclick="confirmReceipt('${item.id}', '${item.barcode}', '${item.name}', '${item.price}', '${item.qty || 1}')">Receive</button></td>
+                        <td><span class="status-pill in-transit">Warehouse</span></td>
+                        <td><button class="btn-receive" onclick="confirmReceipt('${item.id}', '${item.barcode}', '${item.name}', '${item.price}')">Receive</button></td>
                     </tr>
                 `;
             });
-            tableBody.innerHTML = html || '<tr><td colspan="5" style="text-align:center; padding: 40px;">No pending deliveries for SMMG.</td></tr>';
+            tableBody.innerHTML = html || '<tr><td colspan="5" style="text-align:center; padding: 40px;">No pending deliveries for SMNE.</td></tr>';
         }
 
         function toggleAll(masterChk) {
@@ -232,7 +231,7 @@
                     document.getElementById('not-found-counter').innerText = `Not Found: ${notFoundCount}`;
                     const logItem = document.createElement('div');
                     logItem.className = 'log-item log-fail';
-                    logItem.innerHTML = `<span>❌ ${val} Not Found</span> <span>${new Date().toLocaleTimeString()}</span>`;
+                    logItem.innerHTML = `<span>❌ ${val} Not in SMNE List</span> <span>${new Date().toLocaleTimeString()}</span>`;
                     log.prepend(logItem);
                 }
                 this.value = '';
@@ -241,11 +240,10 @@
 
         async function approveSelected() {
             const selectedChks = document.querySelectorAll('.row-chk:checked');
-            if (!selectedChks.length || !confirm(`Confirm receipt of ${selectedChks.length} items to SMMG Inventory?`)) return;
+            if (!selectedChks.length || !confirm(`Confirm receipt of ${selectedChks.length} items to SMNE Inventory?`)) return;
 
             const btn = document.getElementById('btn-approve-bulk');
-            const originalText = btn.innerText;
-            btn.innerText = "Processing...";
+            btn.innerText = "Syncing SMNE...";
             btn.disabled = true;
 
             try {
@@ -254,73 +252,60 @@
                         chk.getAttribute('data-id'),
                         chk.getAttribute('data-barcode'),
                         chk.getAttribute('data-name'),
-                        chk.getAttribute('data-price'),
-                        chk.getAttribute('data-qty')
+                        chk.getAttribute('data-price')
                     );
                 }
-                alert("All selected items received successfully.");
+                alert("Successfully received to SMNE Inventory.");
                 fetchWarehouseDeliveries();
                 clearLogs();
             } catch (e) {
-                alert("Error during sync. Please check logs.");
+                alert("Error syncing data.");
             } finally {
-                btn.innerText = originalText;
+                btn.innerText = "Approve Selected";
                 btn.disabled = false;
             }
         }
 
-        async function confirmReceipt(itemId, barcode, name, price, qty) {
-            if(!confirm(`Receive ${barcode} into SMMG?`)) return;
+        async function confirmReceipt(itemId, barcode, name, price) {
+            if(!confirm(`Receive ${barcode} into SMNE?`)) return;
             try {
-                await processReceipt(itemId, barcode, name, price, qty);
-                alert("Item received successfully.");
+                await processReceipt(itemId, barcode, name, price);
+                alert("Stock successfully received by SMNE.");
                 fetchWarehouseDeliveries();
             } catch (e) {
-                alert("Sync failed. Check connection.");
+                alert("Sync failed.");
             }
         }
 
-        /**
-         * CORE LOGIC:
-         * Idinagdag ang URL parameters sa dulo ng WAREHOUSE_URL para masiguro 
-         * ang data transfer kahit naka 'no-cors' mode.
-         */
-        async function processReceipt(id, barcode, name, price, qty) {
-            const storeName = "SM MEGAMALL"; 
-            
-            // --- IDINAGDAG NA VARIABLE LOGIC DITO ---
-            const finalUrl = WAREHOUSE_URL + 
-                "?action=receive_from_warehouse" +
-                "&id=" + encodeURIComponent(id) +
-                "&barcode=" + encodeURIComponent(barcode) +
-                "&name=" + encodeURIComponent(name) +
-                "&price=" + encodeURIComponent(price) +
-                "&qty=" + encodeURIComponent(qty || 1) +
-                "&store=" + encodeURIComponent(storeName);
+        async function processReceipt(id, barcode, name, price) {
+            const storeName = "SM NORTH EDSA"; // Tiyaking match ito sa Google Script mo
 
-            const payload = JSON.stringify({ 
-                action: "receive_from_warehouse", 
-                id: id, 
-                barcode: barcode,
-                name: name,
-                price: price,
-                store: storeName,
-                qty: qty || 1
+            // 1. Mark as RECEIVED in Warehouse Database
+            await fetch(WAREHOUSE_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                body: JSON.stringify({ 
+                    action: "receive_from_warehouse", 
+                    id: id, 
+                    barcode: barcode,
+                    store: storeName 
+                })
             });
 
-            try {
-                // Ginagamit ang finalUrl na may kasamang variables sa dulo
-                await fetch(finalUrl, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    headers: { 'Content-Type': 'text/plain' },
-                    body: payload
-                });
-                return true;
-            } catch (e) {
-                console.error("Sync Error:", e);
-                throw e;
-            }
+            // 2. Update the Inventory sheet in the SMNE BRANCH Database
+            await fetch(BRANCH_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                body: JSON.stringify({ 
+                    action: "directWarehouseUpdate", 
+                    barcode: barcode, 
+                    name: name, 
+                    price: price, 
+                    qty: 1 
+                })
+            });
+            
+            return true;
         }
 
         window.onload = fetchWarehouseDeliveries;

@@ -111,7 +111,7 @@
 
         .form-group { flex: 1; }
         label { display: block; font-size: 0.75rem; font-weight: bold; color: #666; margin-bottom: 6px; text-transform: uppercase; }
-        input, select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 0.9rem; outline: none; }
+        input, select { width: 90%; padding: 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 0.9rem; outline: none; }
         input:focus { border-color: var(--accent); }
 
         .btn-refresh {
@@ -176,11 +176,16 @@
 <body>
 
     <div class="sidebar">
-        <div class="sidebar-header">SM NORT EDSA</div>
+        <div class="sidebar-header">SM NORTH EDSA</div>
         <div class="sidebar-menu">
-            <a href="POS-SMNE.html" class="menu-item"><i>🛒</i> Point of Sale</a>
-            <a href="stocks.html" class="menu-item active"><i>📦</i> Check Stocks</a>
-            <a href="index.html" class="menu-item" style="margin-top: auto;"><i>🚪</i> Logout</a>
+            <a href="POS-SMNE.html" class="menu-item"><i>🛒</i> POINT OF SALE</a>
+            <a href="transactions_smne.html" class="menu-item"><i>📜</i> TRANSACTIONS</a>
+            <a href="delivery_smne.html" class="menu-item"><i>🚚</i> STOCK DELIVERY</a>
+            <a href="pullout_smne.html" class="menu-item"><i>📤</i> STOCK PULL OUT</a>
+            <a href="cashier_approvals_smne.html" class="menu-item"><i>⏳</i> MY PENDING STOCKS</a>
+            <a href="smne_approval.html" class="menu-item"><i>🏢</i> Receive Warehouse</a>
+            <a href="stocks_smne.html" class="menu-item active"><i>📦</i> CHECK STOCKS</a>
+            <a href="index.html" class="menu-item" style="margin-top: auto;"><i>🚪</i> LOGOUT</a>
         </div>
     </div>
 
@@ -196,7 +201,7 @@
                     <label>Search Product</label>
                     <input type="text" id="stockSearch" placeholder="Enter Product Name or Barcode..." oninput="filterStock()">
                 </div>
-                <div class="form-group" style="flex: 0.4;">
+                <div class="form-group" style="flex: 0.4; display:none;">
                     <label>Stock Status</label>
                     <select id="statusFilter" onchange="filterStock()">
                         <option value="all">All Items</option>
@@ -216,12 +221,10 @@
                             <th>Item Description</th>
                             <th>Category</th>
                             <th>Unit Price</th>
-                            <th>Current Stock</th>
-                            <th>Status</th>
                         </tr>
                     </thead>
                     <tbody id="stock-table-body">
-                        <tr><td colspan="6" style="text-align:center; padding:50px; color:#999;">Loading inventory data...</td></tr>
+                        <tr><td colspan="4" style="text-align:center; padding:50px; color:#999;">Loading inventory data...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -229,7 +232,7 @@
     </div>
 
     <script>
-        const SHEETS_URL = "https://script.google.com/macros/s/AKfycby3VGbzQGYn7NE_XHifUKANMxMRh8iZHNklGlvfkhyufm69x4sWLw0rUaj_8fQdbYiR/exec";
+        const SHEETS_URL = "https://script.google.com/macros/s/AKfycbxKnZHePSbSMqf1G_lcnF867kEL6Idq6yNEBWiu2XtklhljQlCnloSshXHXNoHY6wUi/exec";
         let inventoryData = [];
 
         window.onload = fetchInventory;
@@ -240,21 +243,38 @@
             indicator.style.color = "#f39c12";
 
             try {
-                const response = await fetch(SHEETS_URL);
-                const data = await response.json();
-                inventoryData = data;
+                // Nagdagdag ng action=getAdminData para siguradong tama ang makuha
+                const response = await fetch(SHEETS_URL + "?action=getAdminData");
+                const result = await response.json();
+                
+                // --- COMPATIBILITY CHECK ---
+                if (result.inventory && Array.isArray(result.inventory)) {
+                    inventoryData = result.inventory;
+                } else if (Array.isArray(result)) {
+                    inventoryData = result;
+                } else {
+                    inventoryData = [];
+                }
+                
                 displayStock(inventoryData);
                 indicator.innerText = "● Live Data Synced";
                 indicator.style.color = "#27ae60";
             } catch (error) {
+                console.error("Fetch Error:", error);
                 indicator.innerText = "● Sync Error";
                 indicator.style.color = "#e74c3c";
+                document.getElementById('stock-table-body').innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; color:red;">Error loading data. Please refresh.</td></tr>';
             }
         }
 
         function displayStock(data) {
             const tbody = document.getElementById('stock-table-body');
             let html = "";
+
+            if (!data || data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:50px;">No inventory items found.</td></tr>';
+                return;
+            }
 
             data.forEach(item => {
                 const qty = parseInt(item.stock) || 0;
@@ -271,27 +291,29 @@
 
                 html += `
                     <tr>
-                        <td class="barcode-text">${item.barcode}</td>
-                        <td style="font-weight: 500;">${item.name}</td>
+                        <td class="barcode-text">${item.barcode || 'N/A'}</td>
+                        <td style="font-weight: 500;">${item.name || 'Unknown'}</td>
                         <td>${item.category || 'General'}</td>
-                        <td>₱${parseFloat(item.price).toFixed(2)}</td>
-                        <td style="font-weight: bold; font-size: 1rem;">${qty}</td>
-                        <td><span class="stock-badge ${statusClass}">${statusText}</span></td>
+                        <td>₱${parseFloat(item.price || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
                     </tr>
                 `;
             });
 
-            tbody.innerHTML = html || '<tr><td colspan="6" style="text-align:center;">No items found.</td></tr>';
+            tbody.innerHTML = html;
         }
 
         function filterStock() {
             const searchTerm = document.getElementById('stockSearch').value.toLowerCase();
             const filterValue = document.getElementById('statusFilter').value;
 
+            if (!inventoryData) return;
+
             const filtered = inventoryData.filter(item => {
-                const matchesSearch = item.name.toLowerCase().includes(searchTerm) || item.barcode.includes(searchTerm);
-                const qty = parseInt(item.stock) || 0;
+                const itemName = (item.name || "").toLowerCase();
+                const itemBarcode = (item.barcode || "").toString().toLowerCase();
+                const matchesSearch = itemName.includes(searchTerm) || itemBarcode.includes(searchTerm);
                 
+                const qty = parseInt(item.stock) || 0;
                 let matchesStatus = true;
                 if (filterValue === 'good') matchesStatus = qty > 15;
                 if (filterValue === 'low') matchesStatus = qty <= 15 && qty > 5;

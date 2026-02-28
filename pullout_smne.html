@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SM NORTH EDSA - Pull Out System</title>
+    <link href="css/pos.css" rel="stylesheet">
+    <style>
+        .reason-select {
+            width: 100%;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            margin-bottom: 15px;
+        }
+        .pullout-badge {
+            background: #e74c3c;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+        }
+        /* Style para sa error validation */
+        .invalid-field { 
+            border: 2px solid #e74c3c !important; 
+            background-color: #fdf2f2 !important;
+        }
+
+        /* Status Indicator Styles */
+        .status-dot {
+            height: 10px;
+            width: 10px;
+            background-color: #bdc3c7;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 5px;
+        }
+        .status-online { background-color: #27ae60; box-shadow: 0 0 5px #27ae60; }
+        .status-offline { background-color: #e74c3c; box-shadow: 0 0 5px #e74c3c; }
+        .status-syncing { background-color: #f1c40f; box-shadow: 0 0 5px #f1c40f; animation: blink 1s infinite; }
+        
+        /* Item Validation Styles */
+        #item-display-name {
+            display: block;
+            margin-top: 5px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            min-height: 1.2rem;
+        }
+        .text-success { color: #27ae60; }
+        .text-danger { color: #e74c3c; }
+
+        @keyframes blink {
+            0% { opacity: 1; }
+            50% { opacity: 0.3; }
+            100% { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <div class="sidebar-header">SM NORTH EDSA</div>
+        <div class="sidebar-menu">
+            <a href="POS-SMNE.html" class="menu-item"><i>🛒</i> POINT OF SALE</a>
+            <a href="transactions_smne.html" class="menu-item"><i>📜</i> TRANSACTIONS</a>
+            <a href="delivery_smne.html" class="menu-item"><i>🚚</i> STOCK DELIVERY</a>
+            <a href="pullout_smne.html" class="menu-item active"><i>📤</i> STOCK PULL OUT</a>
+            <a href="cashier_approvals_smne.html" class="menu-item"><i>⏳</i> MY PENDING STOCKS</a>
+            <a href="smne_approval.html" class="menu-item"><i>🏢</i> Receive Warehouse</a>
+            <a href="stocks_smne.html" class="menu-item"><i>📦</i> CHECK STOCKS</a>
+            <a href="index.html" class="menu-item" style="margin-top: auto;"><i>🚪</i> LOGOUT</a>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="top-bar">
+            <div style="font-weight: 600; color: #e74c3c; display: flex; align-items: center;">
+                <span id="sync-dot" class="status-dot"></span>
+                STOCK PULL-OUT MODE &nbsp;<span id="loading-indicator" style="font-size: 0.85rem;">(Checking Connection...)</span>
+            </div>
+            <div class="cashier-info">
+                <span id="active-user">Active User</span>
+                <span class="pullout-badge">Inventory Control</span>
+            </div>
+        </div>
+
+        <div class="pos-wrapper">
+            <div class="left-panel">
+                <h3 style="margin-top:0; color: #e74c3c;">Pull Out Details</h3>
+                
+                <div class="grid-3">
+                    <div class="form-group"><label>Date</label><input type="date" id="pullout_date"></div>
+                    <div class="form-group"><label>Reference No. (Optional)</label><input type="text" id="ref_number" placeholder="PO-2024-001"></div>
+                    <div class="form-group">
+                        <label>Reason</label>
+                        <select id="pullout_reason" class="reason-select">
+                            <option value="Damaged">Damaged Goods</option>
+                            <option value="Expired">Expired</option>
+                            <option value="Return to Supplier">Return to Supplier</option>
+                            <option value="Store Use">Store Use</option>
+                            <option value="Wrong Item">Wrong Item Delivered</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="barcode-section">
+                    <label style="color: #e74c3c;">Scan Item to Pull Out</label>
+                    <div style="display:flex; gap:10px;">
+                        <input type="text" id="item_barcode" class="barcode-input" oninput="searchInventory()" onkeypress="handleEnter(event)" placeholder="Scan Barcode..." autofocus>
+                        <button id="add-btn" onclick="addItem()" style="padding:0 20px; background:#e74c3c; color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">ADD</button>
+                    </div>
+                    <span id="item-display-name"></span>
+                    
+                    <input type="hidden" id="item_name">
+                    <input type="hidden" id="item_price">
+                </div>
+
+                <div class="form-group" style="margin-top:15px;">
+                    <label style="color: #e74c3c; font-weight: bold;">Authorized By (Required) *</label>
+                    <input type="text" id="authorized_by" placeholder="Enter Manager's Full Name" oninput="this.classList.remove('invalid-field')">
+                    <small id="auth-error-msg" style="color: #e74c3c; display: none;">Manager's name is required!</small>
+                </div>
+                
+                <div class="form-group">
+                    <label>Remarks / Notes</label>
+                    <textarea id="remarks" style="width:100%; height:80px; padding:10px; border-radius:4px; border:1px solid #ddd;" placeholder="Additional details..."></textarea>
+                </div>
+            </div>
+
+            <div class="right-panel">
+                <h3 style="margin:0; font-weight: 500;">Pull Out List</h3>
+                <div id="cart-list" class="cart-container" style="height: 350px;"></div>
+
+                <div class="total-section">
+                    <div class="total-row">
+                        <span>Total Items:</span>
+                        <span id="total-qty">0</span>
+                    </div>
+                    <div class="total-row" style="font-size: 1.2rem; font-weight: bold;">
+                        <span>Estimated Value:</span>
+                        <span id="total-value">₱0.00</span>
+                    </div>
+                    
+                    <button class="btn-save" id="btn-submit" onclick="confirmPullOut()" style="background: #e74c3c;">SUBMIT FOR APPROVAL</button>
+                    <button onclick="emptyCart()" style="width:100%; background:none; border:none; color:#bdc3c7; cursor:pointer; margin-top:10px;">Clear List</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SHEETS_URL = "https://script.google.com/macros/s/AKfycbxKnZHePSbSMqf1G_lcnF867kEL6Idq6yNEBWiu2XtklhljQlCnloSshXHXNoHY6wUi/exec";
+
+        let inventory = []; 
+        let cart = [];
+
+        window.onload = function() {
+            document.getElementById('pullout_date').valueAsDate = new Date();
+            fetchInventory();
+        };
+
+        function updateSyncStatus(status) {
+            const dot = document.getElementById('sync-dot');
+            const text = document.getElementById('loading-indicator');
+            dot.className = "status-dot";
+            
+            if(status === 'online') {
+                dot.classList.add('status-online');
+                text.innerText = "(Connected to Cloud)";
+                text.style.color = "#27ae60";
+            } else if(status === 'offline') {
+                dot.classList.add('status-offline');
+                text.innerText = "(Connection Error)";
+                text.style.color = "#e74c3c";
+            } else if(status === 'syncing') {
+                dot.classList.add('status-syncing');
+                text.innerText = "(Syncing Data...)";
+                text.style.color = "#f1c40f";
+            }
+        }
+
+        async function fetchInventory() {
+            updateSyncStatus('syncing');
+            try {
+                // Pinanatili ang fetch request sa original na URL mo
+                const response = await fetch(SHEETS_URL + "?action=getAdminData");
+                const result = await response.json();
+                inventory = result.inventory || result || []; 
+                updateSyncStatus('online');
+                document.getElementById('loading-indicator').innerText = "(Cloud Linked: " + inventory.length + " Items)";
+            } catch (error) {
+                console.error("Fetch Error:", error);
+                updateSyncStatus('offline');
+            }
+        }
+
+        function searchInventory() {
+            const barcodeInput = document.getElementById('item_barcode');
+            const displayName = document.getElementById('item-display-name');
+            const addBtn = document.getElementById('add-btn');
+            const bcValue = barcodeInput.value.trim();
+            
+            if (bcValue === "") {
+                displayName.innerText = "";
+                return;
+            }
+
+            const item = inventory.find(i => String(i.barcode).trim() === bcValue);
+
+            if (item) {
+                document.getElementById('item_name').value = item.name;
+                document.getElementById('item_price').value = item.price;
+                displayName.innerText = "✓ " + item.name;
+                displayName.className = "text-success";
+                addBtn.disabled = false;
+                addBtn.style.opacity = "1";
+            } else {
+                document.getElementById('item_name').value = "";
+                document.getElementById('item_price').value = "";
+                displayName.innerText = "✗ Unknown Item (Not in Inventory)";
+                displayName.className = "text-danger";
+                addBtn.disabled = true;
+                addBtn.style.opacity = "0.5";
+            }
+        }
+
+        function handleEnter(e) { 
+            if (e.key === "Enter") {
+                e.preventDefault();
+                const addBtn = document.getElementById('add-btn');
+                if (!addBtn.disabled) addItem(); 
+            }
+        }
+
+        function addItem() {
+            const barcodeInput = document.getElementById('item_barcode');
+            const name = document.getElementById('item_name').value;
+            const price = parseFloat(document.getElementById('item_price').value);
+            const barcodeValue = barcodeInput.value.trim();
+
+            if (!name || isNaN(price)) {
+                barcodeInput.classList.add('invalid-field');
+                return;
+            }
+
+            barcodeInput.classList.remove('invalid-field');
+            cart.push({ 
+                id: Date.now(), 
+                barcode: barcodeValue, 
+                name: name, 
+                price: price,
+                qty: 1 // Idinagdag para sa backend processing
+            });
+            
+            barcodeInput.value = '';
+            document.getElementById('item_name').value = '';
+            document.getElementById('item_price').value = '';
+            document.getElementById('item-display-name').innerText = '';
+            barcodeInput.focus();
+            updateUI();
+        }
+
+        function removeItem(id) {
+            cart = cart.filter(i => i.id !== id);
+            updateUI();
+        }
+
+        function updateUI() {
+            const list = document.getElementById('cart-list');
+            let totalVal = 0;
+            let html = '<div class="cart-row cart-header"><span>#</span><span>Barcode</span><span>Item</span><span>Price</span><span></span></div>';
+            
+            cart.forEach((item, i) => {
+                totalVal += item.price;
+                html += `<div class="cart-row">
+                    <span>${i+1}</span>
+                    <span class="cart-barcode">${item.barcode}</span>
+                    <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${item.name}</span>
+                    <span>₱${item.price.toFixed(2)}</span>
+                    <button class="btn-remove" onclick="removeItem(${item.id})">✕</button>
+                </div>`;
+            });
+
+            list.innerHTML = html;
+            document.getElementById('total-qty').innerText = cart.length;
+            document.getElementById('total-value').innerText = `₱${totalVal.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+        }
+
+        function emptyCart() { if(confirm("Clear pull out list?")) { cart = []; updateUI(); } }
+
+        async function confirmPullOut() {
+            const btnSubmit = document.getElementById('btn-submit');
+            const authInput = document.getElementById('authorized_by');
+            const authError = document.getElementById('auth-error-msg');
+            
+            const date = document.getElementById('pullout_date').value;
+            const refRaw = document.getElementById('ref_number').value.trim();
+            const reason = document.getElementById('pullout_reason').value;
+            const auth = authInput.value.trim();
+            const userRemarks = document.getElementById('remarks').value;
+
+            if (cart.length === 0) {
+                alert("Please add at least one item to the list.");
+                return;
+            }
+
+            const finalRef = refRaw === "" ? "N/A" : refRaw;
+
+            if (!auth) {
+                alert("WARNING: Authorized By field is required!");
+                authInput.classList.add('invalid-field');
+                authError.style.display = "block";
+                authInput.focus();
+                return;
+            } else {
+                authError.style.display = "none";
+            }
+
+            // Formatting detail for Google Sheets Column G and Column H
+            const detailRemarks = `Reason: ${reason} | Ref: ${finalRef} | Auth: ${auth} | Notes: ${userRemarks || "None"}`;
+            const statusNote = "[PULLOUT]";
+
+            btnSubmit.innerText = "SENDING...";
+            btnSubmit.disabled = true;
+            updateSyncStatus('syncing');
+
+            // Ipinadala bilang array ng objects para sa iyong doPost
+            const pulloutData = cart.map(item => ({
+                date: date,
+                name: item.name,
+                barcode: item.barcode,
+                price: item.price,
+                qty: 1,
+                remarks: detailRemarks, // Papasok sa Column G
+                note: statusNote        // Papasok sa Column H
+            }));
+
+            try {
+                await fetch(SHEETS_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    cache: 'no-cache',
+                    body: JSON.stringify(pulloutData)
+                });
+
+                alert("SUCCESS: Naipadala na sa APPROVAL sheet ang iyong request.");
+                
+                // RESET FORM
+                cart = [];
+                updateUI();
+                document.getElementById('ref_number').value = "";
+                authInput.value = "";
+                document.getElementById('remarks').value = "";
+                updateSyncStatus('online');
+                
+            } catch (error) {
+                console.error("Post Error:", error);
+                alert("CONNECTION ERROR! Hindi naipadala ang data.");
+                updateSyncStatus('offline');
+            } finally {
+                btnSubmit.innerText = "SUBMIT FOR APPROVAL";
+                btnSubmit.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>

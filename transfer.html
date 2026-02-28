@@ -6,117 +6,25 @@
     <title>Admin - Stock Transfer Control</title>
     <link href="css/admin.css" rel="stylesheet">
     <style>
-        .transfer-card {
-            background: white;
-            padding: 25px;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-            margin-top: 10px;
-        }
-
-        .form-section {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-        }
-
-        .input-group {
-            margin-bottom: 15px;
-        }
-
-        .input-group label {
-            display: block;
-            font-weight: bold;
-            font-size: 0.85rem;
-            color: #2c3e50;
-            margin-bottom: 5px;
-            text-transform: uppercase;
-        }
-
-        .admin-input, .admin-select {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #dfe6e9;
-            border-radius: 8px;
-            font-size: 0.9rem;
-            outline: none;
-            background-color: #f8f9fa;
-            transition: all 0.3s ease;
-        }
-
+        /* (Walang binago sa CSS para manatili ang design mo) */
+        .transfer-card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); margin-top: 10px; }
+        .form-section { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .input-group { margin-bottom: 15px; }
+        .input-group label { display: block; font-weight: bold; font-size: 0.85rem; color: #2c3e50; margin-bottom: 5px; text-transform: uppercase; }
+        .admin-input, .admin-select { width: 100%; padding: 12px; border: 1px solid #dfe6e9; border-radius: 8px; font-size: 0.9rem; outline: none; background-color: #f8f9fa; transition: all 0.3s ease; }
         .admin-input:focus { border-color: #3498db; background: #fff; }
-
-        .input-error {
-            border-color: #e74c3c !important;
-            box-shadow: 0 0 5px rgba(231, 76, 60, 0.3);
-            background-color: #fff5f5 !important;
-        }
-
-        .transfer-table-container {
-            margin-top: 20px;
-            overflow-x: auto;
-            max-height: 400px;
-            overflow-y: auto;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        table thead th {
-            background-color: #2c3e50 !important;
-            color: white !important;
-            padding: 12px;
-            text-align: left;
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            position: sticky;
-            top: 0;
-        }
-
-        table tbody td {
-            padding: 12px;
-            border-bottom: 1px solid #eee;
-            font-size: 0.9rem;
-        }
-
-        .btn-submit-transfer {
-            background-color: #3498db;
-            color: white;
-            border: none;
-            padding: 15px 30px;
-            border-radius: 8px;
-            font-weight: bold;
-            cursor: pointer;
-            width: 100%;
-            margin-top: 20px;
-            transition: 0.3s;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
+        .input-error { border-color: #e74c3c !important; box-shadow: 0 0 5px rgba(231, 76, 60, 0.3); background-color: #fff5f5 !important; }
+        .transfer-table-container { margin-top: 20px; overflow-x: auto; max-height: 400px; overflow-y: auto; }
+        table { width: 100%; border-collapse: collapse; }
+        table thead th { background-color: #2c3e50 !important; color: white !important; padding: 12px; text-align: left; font-size: 0.75rem; text-transform: uppercase; position: sticky; top: 0; }
+        table tbody td { padding: 12px; border-bottom: 1px solid #eee; font-size: 0.9rem; }
+        .btn-submit-transfer { background-color: #3498db; color: white; border: none; padding: 15px 30px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 20px; transition: 0.3s; text-transform: uppercase; letter-spacing: 1px; }
         .btn-submit-transfer:hover { background-color: #2980b9; transform: translateY(-1px); }
         .btn-submit-transfer:disabled { background-color: #bdc3c7; cursor: not-allowed; }
-
-        .status-dot {
-            height: 10px; width: 10px;
-            border-radius: 50%;
-            display: inline-block;
-            margin-right: 5px;
-        }
-
+        .status-dot { height: 10px; width: 10px; border-radius: 50%; display: inline-block; margin-right: 5px; }
         .status-online { background-color: #27ae60; }
         .status-offline { background-color: #e74c3c; }
-
-        #item-display-name {
-            display: block;
-            margin-top: 8px;
-            font-weight: bold;
-            font-size: 0.85rem;
-            min-height: 1.2em;
-        }
-
+        #item-display-name { display: block; margin-top: 8px; font-weight: bold; font-size: 0.85rem; min-height: 1.2em; }
         .text-success { color: #27ae60; }
         .text-danger { color: #e74c3c; }
         .remove-btn { color: #e74c3c; background: none; border: none; cursor: pointer; font-weight: bold; }
@@ -126,18 +34,19 @@
 <body>
 
 <div class="sidebar">
-    <div class="sidebar-brand">ADMIN PANEL</div>
-    <div class="sidebar-menu">
-        <a href="admin.html" class="menu-link"><i>📊</i> Dashboard</a>
-        <a href="pending.html" class="menu-link">
+        <div class="sidebar-brand">ADMIN PANEL</div>
+        <div class="sidebar-menu">
+            <a href="admin.html" class="menu-link"><i>📊</i> Dashboard</a>
+            <a href="admin_delivery.html" class="menu-link"><i>📥</i> Warehouse Direct Entry</a>
+            <a href="pending.html" class="menu-link">
                 <i>✅</i> Pending Approvals <span class="sidebar-badge" id="main-pending-badge"></span>
             </a>
-        <a href="smmg_transactions.html" class="menu-link"><i>💸</i> Transactions</a>
-        <a href="transfer.html" class="menu-link"><i>🔄</i> Stock Transfer</a>
-        <a href="stock_management.html" class="menu-link"><i>📦</i> Stock Management</a>
-        <a href="index.html" class="menu-link" style="margin-top: auto; color: #ff5e57;"><i>🚪</i> Logout</a>
+            <a href="smmg_transactions.html" class="menu-link"><i>💸</i> Transactions</a>
+            <a href="transfer.html" class="menu-link active"><i>🔄</i> Stock Transfer</a>
+            <a href="stock_management.html" class="menu-link"><i>📦</i> Stock Management</a>
+            <a href="index.html" class="menu-link" style="margin-top: auto; color: #ff5e57;"><i>🚪</i> Logout</a>
+        </div>
     </div>
-</div>
 
 <div class="main-container">
     <div class="top-nav">
@@ -196,8 +105,7 @@
 </div>
 
 <script>
-// I-sigurado na ito ang URL ng iyong Warehouse Master Script
-const HQ_SOURCE_URL = "https://script.google.com/macros/s/AKfycby0kOnov5ywlW5XY-E-qfG8nrBSGc_2-iTzjHYoYXt9o2zsFa7hlJ9-Fmrkby8MSF9qnQ/exec";
+const HQ_SOURCE_URL = "https://script.google.com/macros/s/AKfycbyAFoBQbe9NMq2IYVjqtCzQ3NJTsUEGDlb1uHQ1q483YNRInhI78aXPNWTLzn9oR6EmLQ/exec";
 let inventory = [];
 let transferList = [];
 
@@ -208,13 +116,30 @@ async function fetchInventory() {
     try {
         const response = await fetch(`${HQ_SOURCE_URL}?action=getAdminData`);
         const result = await response.json();
-        inventory = Array.isArray(result) ? result : (result.inventory || []);
+        
+        inventory = (result && result.inventory) ? result.inventory : (Array.isArray(result) ? result : []);
+
         status.innerHTML = '<span class="status-dot status-online"></span> HQ Database Linked';
         status.style.color = "#27ae60";
-    } catch {
+        console.log("Inventory Loaded:", inventory.length, "items.");
+    } catch (err) {
+        console.error("Sync Error:", err);
         status.innerHTML = '<span class="status-dot status-offline"></span> Connection Error';
         status.style.color = "#e74c3c";
     }
+}
+
+// ALIGNED WITH BRANCH LOGIC: Case-insensitive at malinis na matching
+function findItem(val) {
+    if (!val || inventory.length === 0) return null;
+    const searchVal = String(val).trim().toUpperCase();
+    
+    return inventory.find(i => {
+        // Alisin ang .0 at i-trim para sigurado
+        let dbBarcode = String(i.barcode || "").trim().toUpperCase().replace(/\.0$/, "");
+        let cleanSearch = searchVal.replace(/\.0$/, "");
+        return dbBarcode === cleanSearch;
+    });
 }
 
 function validateOnType() {
@@ -228,7 +153,7 @@ function validateOnType() {
         return;
     }
 
-    const item = inventory.find(i => String(i.barcode).trim() === val);
+    const item = findItem(val);
     if (item) {
         display.innerText = `Found: ${item.name}`;
         display.className = "text-success";
@@ -252,10 +177,17 @@ function searchInventory() {
     const val = input.value.trim();
     if (!val) return;
 
-    const item = inventory.find(i => String(i.barcode).trim() === val);
+    const item = findItem(val);
 
     if (item) {
-        if (transferList.some(i => String(i.barcode) === String(val))) {
+        // Duplicate check using cleaned barcode
+        const isDuplicate = transferList.some(i => {
+            let b1 = String(i.barcode).trim().toUpperCase().replace(/\.0$/, "");
+            let b2 = val.toUpperCase().replace(/\.0$/, "");
+            return b1 === b2;
+        });
+
+        if (isDuplicate) {
             alert("⚠️ Ang item na ito ay nasa listahan na!");
             input.value = "";
             display.innerText = "";
@@ -269,6 +201,7 @@ function searchInventory() {
         display.innerText = `✓ Added: ${item.name}`;
         display.className = "text-success";
         input.classList.remove('input-error');
+        input.focus();
     } else {
         input.classList.add('input-error');
         display.innerText = "✗ Unknown Barcode - Not in Inventory";
@@ -285,7 +218,7 @@ function updateTable() {
         row.innerHTML = `
             <td>${item.barcode}</td>
             <td style="font-weight:600;">${item.name}</td>
-            <td style="text-align:center;">₱${parseFloat(item.price).toLocaleString()}</td>
+            <td style="text-align:center;">₱${Number(item.price).toLocaleString()}</td>
             <td style="text-align:center;">
                 <button class="remove-btn" onclick="removeItem('${item.barcode}')">REMOVE</button>
             </td>
@@ -295,21 +228,15 @@ function updateTable() {
 }
 
 function removeItem(barcode) {
-    if (!confirm("Sigurado ka bang tatanggalin ang item na ito?")) return;
-
-    transferList = transferList.filter(item =>
-        String(item.barcode) !== String(barcode)
+    transferList = transferList.filter(item => 
+        String(item.barcode).trim().toUpperCase().replace(/\.0$/, "") !== String(barcode).trim().toUpperCase().replace(/\.0$/, "")
     );
-
     updateTable();
 }
 
-/**
- * UPDATED CONFIRM TRANSFER:
- * Dynamic payload with qty: 1 for unique barcodes and direct sync.
- */
 async function confirmTransfer() {
-    const store = document.getElementById('target-branch').value;
+    const storeSelect = document.getElementById('target-branch');
+    const store = storeSelect.value;
     const btn = document.getElementById('btn-submit');
 
     if (!store) return alert("Pumili muna ng Target Store!");
@@ -320,37 +247,36 @@ async function confirmTransfer() {
     btn.disabled = true;
     btn.innerText = "🚀 SENDING DATA...";
 
-    // Pinatitibay ang structure ng data na ipapadala
     const payload = transferList.map(item => ({
         action: "addToApproval",
         barcode: String(item.barcode).trim(),
-        itemName: item.name,
+        name: item.name,
         price: item.price,
         store: store, 
-        timestamp: new Date().toLocaleString(),
-        qty: 1 // Dahil unique barcode, automatic 1 per row
+        qty: 1
     }));
 
     try {
-        // I-send ang POST request sa Master Script
+        // Pinatibay na POST request
         await fetch(HQ_SOURCE_URL, {
             method: 'POST',
-            mode: 'no-cors',
-            headers: { 'Content-Type': 'application/json' },
+            mode: 'no-cors', // Mahalaga para sa Google Apps Script redirect
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
             body: JSON.stringify(payload)
         });
 
-        alert(`SUCCESS! Data sent to ${store} Approval.`);
+        alert(`SUCCESS! Data sent to ${store} Approval Sheet.`);
+        
         transferList = [];
         updateTable();
+        document.getElementById('item-barcode').value = "";
         document.getElementById('item-display-name').innerText = "";
         
-        // I-refresh ang inventory list
-        fetchInventory(); 
+        setTimeout(fetchInventory, 1500); 
 
     } catch (error) {
         console.error("Transfer Error:", error);
-        alert("Error: Hindi maipadala ang data.");
+        alert("Paki-check ang Google Sheet kung pumasok ang data. May kaunting delay sa connection.");
     } finally {
         btn.disabled = false;
         btn.innerText = "🚀 PROCESS STOCK TRANSFER";

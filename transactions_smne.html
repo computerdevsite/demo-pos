@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SM NORTH EDSA - Transaction Logs</title>
+    <link href="css/pos.css" rel="stylesheet">
+    
+</head>
+<body>
+    <div class="sidebar">
+        <div class="sidebar-header">SM NORTH EDSA</div>
+        <div class="sidebar-menu">
+            <a href="POS-SMNE.html" class="menu-item"><i>🛒</i> POINT OF SALE</a>
+            <a href="transactions_smne.html" class="menu-item active"><i>📜</i> TRANSACTIONS</a>
+            <a href="delivery_smne.html" class="menu-item"><i>🚚</i> STOCK DELIVERY</a>
+            <a href="pullout_smne.html" class="menu-item"><i>📤</i> STOCK PULL OUT</a>
+            <a href="cashier_approvals_smne.html" class="menu-item"><i>⏳</i> MY PENDING STOCKS</a>
+            <a href="smne_approval.html" class="menu-item"><i>🏢</i> Receive Warehouse</a>
+            <a href="stocks_smne.html" class="menu-item"><i>📦</i> CHECK STOCKS</a>
+            <a href="index.html" class="menu-item" style="margin-top: auto;"><i>🚪</i> LOGOUT</a>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="top-bar">
+            <div style="font-weight: 600; color: var(--primary);">TRANSACTION HISTORY LOGS</div>
+            <div id="sync-status" style="font-size: 0.8rem; color: var(--success);">Loading Records...</div>
+        </div>
+
+        <div class="table-container">
+            <input type="text" id="txnSearch" class="search-box" placeholder="Search SI, Name, or Date..." onkeyup="filterTransactions()">
+            <table id="txnTable">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>SI Number</th>
+                        <th>TIN</th>
+                        <th>Customer Name</th>
+                        <th>Address</th>
+                        <th>Total Amount</th>
+                        <th>Cashier</th>
+                        <th>Items</th>
+                    </tr>
+                </thead>
+                <tbody id="txnBody">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+    const SHEETS_URL = "https://script.google.com/macros/s/AKfycbxKnZHePSbSMqf1G_lcnF867kEL6Idq6yNEBWiu2XtklhljQlCnloSshXHXNoHY6wUi/exechttps://script.google.com/macros/s/AKfycbxKnZHePSbSMqf1G_lcnF867kEL6Idq6yNEBWiu2XtklhljQlCnloSshXHXNoHY6wUi/exec";
+    
+    async function loadTransactions() {
+        const status = document.getElementById('sync-status');
+        const tbody = document.getElementById('txnBody');
+        
+        try {
+            const response = await fetch(`${SHEETS_URL}?action=getTransactions`);
+            let rawData = await response.json();
+            
+            rawData.shift(); // Alisin ang header row
+            
+            tbody.innerHTML = '';
+
+            if (!rawData || rawData.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;">No records found.</td></tr>';
+                return;
+            }
+
+            // --- STEP 1: I-GROUP ANG MGA ITEMS BASE SA SI# ---
+            const groups = [];
+            let currentGroup = null;
+
+            rawData.forEach(r => {
+                const siInRow = String(r[1] || "").trim();
+
+                if (siInRow !== "") {
+                    if (currentGroup) groups.push(currentGroup);
+                    
+                    let cashierName = "---";
+                    if (r[5] || r[10]) cashierName = "ARENAS";
+                    else if (r[6] || r[11]) cashierName = "CLIMACO";
+                    else if (r[7] || r[12]) cashierName = "KING KING";
+                    else if (r[8] || r[13]) cashierName = "BUEMIO";
+                    else if (r[9] || r[14]) cashierName = "BROZO";
+
+                    currentGroup = {
+                        main: {
+                            date: r[0] ? new Date(r[0]).toLocaleDateString() : "---",
+                            si: siInRow,
+                            tin: r[2] || "---",
+                            name: r[3] || "---",
+                            address: r[4] || "---",
+                            total: r[15] ? '₱' + parseFloat(r[15]).toLocaleString(undefined, {minimumFractionDigits: 2}) : "₱0.00",
+                            cashier: cashierName,
+                            barcode: r[18] || "---",
+                            itemName: r[19] || "---"
+                        },
+                        subItems: []
+                    };
+                } else if (currentGroup && (r[18] || r[19])) {
+                    currentGroup.subItems.push({
+                        barcode: r[18] || "---",
+                        itemName: r[19] || "---"
+                    });
+                }
+            });
+            if (currentGroup) groups.push(currentGroup);
+
+            // --- STEP 2: DISPLAY ---
+            let useAltColor = false;
+
+            groups.reverse().forEach(group => {
+                useAltColor = !useAltColor;
+                const groupBg = useAltColor ? "#f2f7ff" : "#ffffff";
+
+                const mainTr = document.createElement('tr');
+                mainTr.style.backgroundColor = groupBg;
+                mainTr.style.borderTop = "2px solid #1a73e8"; 
+                
+                mainTr.innerHTML = `
+                    <td style="font-weight:600;">${group.main.date}</td>
+                    <td style="font-weight:bold; color:#e67e22;">${group.main.si}</td>
+                    <td>${group.main.tin}</td>
+                    <td style="font-weight:600;">${group.main.name}</td>
+                    <td>${group.main.address}</td>
+                    <td style="font-weight:bold; color: #27ae60;">${group.main.total}</td>
+                    <td><span class="status-badge">${group.main.cashier}</span></td>
+                    <td>
+                        <div style="font-weight:600;">${group.main.itemName}</div>
+                        <div style="font-size:0.7rem; color:#888;">Code: ${group.main.barcode}</div>
+                    </td>
+                `;
+                tbody.appendChild(mainTr);
+
+                group.subItems.forEach(sub => {
+                    const subTr = document.createElement('tr');
+                    subTr.style.backgroundColor = groupBg;
+                    subTr.innerHTML = `
+                        <td colspan="7" style="border:none;"></td> 
+                        <td style="border-top: 1px dashed #ddd;">
+                            <div style="font-weight:600; color:#555;">${sub.itemName}</div>
+                            <div style="font-size:0.7rem; color:#888;">Code: ${sub.barcode}</div>
+                        </td>
+                    `;
+                    tbody.appendChild(subTr);
+                });
+            });
+
+            status.innerText = "Active";
+        } catch (error) {
+            status.innerText = "Error grouping data.";
+            console.error(error);
+        }
+    }
+
+    // --- BAGONG SEARCH FUNCTION ---
+    function filterTransactions() {
+        const input = document.getElementById("txnSearch").value.toUpperCase();
+        const tbody = document.getElementById("txnBody");
+        const rows = tbody.getElementsByTagName("tr");
+
+        let currentGroupRows = [];
+        let groupVisible = false;
+
+        for (let i = 0; i < rows.length; i++) {
+            // Check kung ito ay simula ng group (may blue border top)
+            if (rows[i].style.borderTop && rows[i].style.borderTop.includes("solid")) {
+                // I-apply visibility sa nakaraang group
+                if (currentGroupRows.length > 0) {
+                    applyVisibility(currentGroupRows, groupVisible);
+                }
+                // Reset para sa bagong group
+                currentGroupRows = [rows[i]];
+                groupVisible = rows[i].innerText.toUpperCase().includes(input);
+            } else {
+                currentGroupRows.push(rows[i]);
+                if (rows[i].innerText.toUpperCase().includes(input)) {
+                    groupVisible = true;
+                }
+            }
+        }
+        // Apply para sa huling group
+        if (currentGroupRows.length > 0) {
+            applyVisibility(currentGroupRows, groupVisible);
+        }
+    }
+
+    function applyVisibility(rows, isVisible) {
+        rows.forEach(row => {
+            row.style.display = isVisible ? "" : "none";
+        });
+    }
+
+    window.onload = loadTransactions;
+    </script>
+</body>
+</html>
