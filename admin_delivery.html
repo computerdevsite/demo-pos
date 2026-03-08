@@ -6,12 +6,39 @@
     <title>Admin - Warehouse Direct Entry</title>
     <link href="css/admin.css" rel="stylesheet">
     <style>
+        /* Pinanatili ang original na itsura */
         .delivery-grid { display: grid; grid-template-columns: 380px 1fr; gap: 20px; padding: 20px; }
         .entry-card, .batch-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        .batch-card { display: flex; flex-direction: column; min-height: 550px; }
-        .table-container { flex-grow: 1; overflow-y: auto; margin-top: 15px; }
+        
+        /* FIXED HEIGHT PARA SA BATCH CARD */
+        .batch-card { 
+            display: flex; 
+            flex-direction: column; 
+            height: 600px; /* Nilagyan ng fixed height para lumitaw ang scroll */
+        }
+
+        /* --- ITO ANG PINAKABAGONG SCROLLBAR LOGIC --- */
+        .table-container { 
+            flex-grow: 1; 
+            overflow-y: auto; /* Scroll up and down */
+            margin-top: 15px; 
+            border: 1px solid #eee;
+            border-radius: 4px;
+        }
+
         .delivery-table { width: 100%; border-collapse: collapse; }
-        .delivery-table th { position: sticky; top: 0; background: #2c3e50; color: white; padding: 12px; text-align: left; }
+        
+        /* STICKY HEADER para hindi mawala ang labels habang nag-scroll */
+        .delivery-table th { 
+            position: sticky; 
+            top: 0; 
+            background: #2c3e50; 
+            color: white; 
+            padding: 12px; 
+            text-align: left; 
+            z-index: 10;
+        }
+
         .delivery-table td { padding: 12px 10px; border-bottom: 1px solid #eee; }
         .upload-section { border-top: 2px solid #eee; padding-top: 15px; margin-top: 10px; }
         
@@ -36,6 +63,7 @@
                 <i>✅</i> Pending Approvals <span class="sidebar-badge" id="main-pending-badge"></span>
             </a>
             <a href="smmg_transactions.html" class="menu-link"><i>💸</i> Transactions</a>
+            <a href="admin_stocks.html" class="menu-link"><i>📦</i> Global Inventory</a>
             <a href="transfer.html" class="menu-link"><i>🔄</i> Stock Transfer</a>
             <a href="stock_management.html" class="menu-link"><i>📦</i> Stock Management</a>
             <a href="index.html" class="menu-link" style="margin-top: auto; color: #ff5e57;"><i>🚪</i> Logout</a>
@@ -110,7 +138,6 @@
     </div>
 
     <script>
-        // PAKIPALITAN ITO NG PINAKABAGONG DEPLOYMENT URL MO
         const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyAFoBQbe9NMq2IYVjqtCzQ3NJTsUEGDlb1uHQ1q483YNRInhI78aXPNWTLzn9oR6EmLQ/exec";
 
         let inventoryMaster = []; 
@@ -174,6 +201,7 @@
                     } else if (isDuplicateInDatabase) {
                         alert("Duplicate alert: This barcode already exists in the Inventory database!");
                     } else {
+                        // Inilalagay sa unahan para makita agad sa taas ng scroll
                         deliveryBatch.unshift({ 
                             action: "directWarehouseUpdate", 
                             name: name, 
@@ -218,7 +246,6 @@
 
         async function processDirectUpdate() {
             if (deliveryBatch.length === 0) return alert("Queue is empty!");
-            
             if (!confirm(`Are you sure? This will DIRECTLY update the inventory for ${deliveryBatch.length} items.`)) return;
 
             const btn = document.getElementById('btn-submit');
@@ -226,7 +253,6 @@
             btn.innerText = "UPDATING DATABASE...";
 
             try {
-                // Gamit ang mode: 'no-cors' para sa Google Script compatibility
                 await fetch(WEB_APP_URL, {
                     method: "POST",
                     mode: "no-cors",
@@ -235,14 +261,10 @@
                 });
 
                 alert("SUCCESS: Inventory updated successfully!");
-                
-                // Clear local inputs and list
                 deliveryBatch = [];
                 renderTable();
                 document.getElementById('dr_name').value = "";
                 document.getElementById('dr_price').value = "";
-                
-                // Refresh list after 2 seconds para updated ang duplicate check
                 setTimeout(refreshData, 2000);
 
             } catch (err) {

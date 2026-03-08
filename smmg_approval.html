@@ -6,8 +6,9 @@
     <title>SM MEGAMALL - Receive Warehouse Delivery</title>
     <link href="css/pos.css" rel="stylesheet">
     <style>
-        body { display: flex; min-height: 100vh; background-color: #f4f7f6; overflow-x: hidden; }
-        .main-content { flex: 1; display: flex; flex-direction: column; }
+        body { display: flex; min-height: 100vh; background-color: #f4f7f6; overflow-x: hidden; margin: 0; }
+        .sidebar { width: 250px; background: #2c3e50; color: white; } /* Basic sidebar style para sa preview */
+        .main-content { flex: 1; display: flex; flex-direction: column; height: 100vh; }
         
         .sticky-search-header {
             position: sticky;
@@ -25,11 +26,37 @@
         .status-offline { background: #e74c3c; box-shadow: 0 0 8px #e74c3c; }
         .status-label { color: #666; text-transform: uppercase; letter-spacing: 0.5px; }
 
-        .delivery-container { padding: 20px; flex: 1; }
-        .data-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); color: #333; margin-bottom: 20px; }
+        .delivery-container { padding: 20px; flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+        .data-card { 
+            background: white; 
+            padding: 20px; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05); 
+            color: #333; 
+            display: flex; 
+            flex-direction: column;
+            max-height: 100%; /* Sinisiguro na hindi lalampas sa screen */
+        }
         
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        th { text-align: left; padding: 12px; border-bottom: 2px solid #eee; background-color: #2c3e50; color: white; position: sticky; top: 135px; z-index: 10; }
+        /* --- SCROLLABLE TABLE SETTINGS --- */
+        .table-wrapper {
+            overflow-y: auto;
+            margin-top: 15px;
+            border: 1px solid #eee;
+            flex: 1; /* Kinukuha ang natitirang space */
+        }
+
+        table { width: 100%; border-collapse: collapse; }
+        th { 
+            text-align: left; 
+            padding: 12px; 
+            border-bottom: 2px solid #eee; 
+            background-color: #2c3e50; 
+            color: white; 
+            position: sticky; 
+            top: 0; /* Nakadikit sa taas habang nag-scroll */
+            z-index: 10; 
+        }
         td { padding: 12px; border-bottom: 1px solid #eee; }
         
         .status-pill { padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; }
@@ -64,7 +91,7 @@
 <body>
 
     <div class="sidebar">
-        <div class="sidebar-header">SM MEGAMALL</div>
+        <div class="sidebar-header" style="padding: 20px; font-weight: bold; font-size: 1.2rem; border-bottom: 1px solid #34495e;">SM MEGAMALL</div>
         <div class="sidebar-menu">
             <a href="POS.html" class="menu-item"><i>🛒</i> Point of Sale</a>
             <a href="transactions.html" class="menu-item"><i>📜</i> Transactions</a>
@@ -113,18 +140,20 @@
                     </div>
                 </div>
                 
-                <table>
-                    <thead>
-                        <tr>
-                            <th class="chk-cell"><input type="checkbox" id="mark-all" onclick="toggleAll(this)"></th>
-                            <th>Barcode</th>
-                            <th>Item Description</th>
-                            <th>Origin</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody id="warehouse-delivery-table"></tbody>
-                </table>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th class="chk-cell"><input type="checkbox" id="mark-all" onclick="toggleAll(this)"></th>
+                                <th>Barcode</th>
+                                <th>Item Description</th>
+                                <th>Origin</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="warehouse-delivery-table"></tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
@@ -280,15 +309,9 @@
             }
         }
 
-        /**
-         * CORE LOGIC:
-         * Idinagdag ang URL parameters sa dulo ng WAREHOUSE_URL para masiguro 
-         * ang data transfer kahit naka 'no-cors' mode.
-         */
         async function processReceipt(id, barcode, name, price, qty) {
             const storeName = "SM MEGAMALL"; 
             
-            // --- IDINAGDAG NA VARIABLE LOGIC DITO ---
             const finalUrl = WAREHOUSE_URL + 
                 "?action=receive_from_warehouse" +
                 "&id=" + encodeURIComponent(id) +
@@ -309,7 +332,6 @@
             });
 
             try {
-                // Ginagamit ang finalUrl na may kasamang variables sa dulo
                 await fetch(finalUrl, {
                     method: 'POST',
                     mode: 'no-cors',

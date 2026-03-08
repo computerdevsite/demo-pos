@@ -50,38 +50,48 @@
     </div>
 
     <script>
-    const SHEETS_URL = "https://script.google.com/macros/s/AKfycbxKnZHePSbSMqf1G_lcnF867kEL6Idq6yNEBWiu2XtklhljQlCnloSshXHXNoHY6wUi/exechttps://script.google.com/macros/s/AKfycbxKnZHePSbSMqf1G_lcnF867kEL6Idq6yNEBWiu2XtklhljQlCnloSshXHXNoHY6wUi/exec";
+    const SHEETS_URL = "https://script.google.com/macros/s/AKfycbxKnZHePSbSMqf1G_lcnF867kEL6Idq6yNEBWiu2XtklhljQlCnloSshXHXNoHY6wUi/exec";
     
     async function loadTransactions() {
         const status = document.getElementById('sync-status');
         const tbody = document.getElementById('txnBody');
         
         try {
+            // Gumamit ng 'cors' mode at i-check ang response
             const response = await fetch(`${SHEETS_URL}?action=getTransactions`);
+            if (!response.ok) throw new Error("Network response was not ok");
+            
             let rawData = await response.json();
             
-            rawData.shift(); // Alisin ang header row
+            // Siguraduhin na may laman ang data bago mag-shift
+            if (rawData && rawData.length > 0) {
+                rawData.shift(); // Alisin ang header row
+            }
             
             tbody.innerHTML = '';
 
             if (!rawData || rawData.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;">No records found.</td></tr>';
+                status.innerText = "No Records";
                 return;
             }
 
-            // --- STEP 1: I-GROUP ANG MGA ITEMS BASE SA SI# ---
             const groups = [];
             let currentGroup = null;
 
             rawData.forEach(r => {
+                // Check kung valid row at hindi empty
+                if (!r || r.length < 2) return; 
+
                 const siInRow = String(r[1] || "").trim();
 
                 if (siInRow !== "") {
                     if (currentGroup) groups.push(currentGroup);
                     
                     let cashierName = "---";
+                    // Cashier detection logic (Original)
                     if (r[5] || r[10]) cashierName = "ARENAS";
-                    else if (r[6] || r[11]) cashierName = "CLIMACO";
+                    else if (r[6] || r[11]) cashierName = "TANIELON";
                     else if (r[7] || r[12]) cashierName = "KING KING";
                     else if (r[8] || r[13]) cashierName = "BUEMIO";
                     else if (r[9] || r[14]) cashierName = "BROZO";
@@ -107,11 +117,11 @@
                     });
                 }
             });
+            
             if (currentGroup) groups.push(currentGroup);
 
-            // --- STEP 2: DISPLAY ---
+            // DISPLAY LOGIC
             let useAltColor = false;
-
             groups.reverse().forEach(group => {
                 useAltColor = !useAltColor;
                 const groupBg = useAltColor ? "#f2f7ff" : "#ffffff";
@@ -150,13 +160,14 @@
             });
 
             status.innerText = "Active";
+            status.style.color = "var(--success)";
         } catch (error) {
             status.innerText = "Error grouping data.";
-            console.error(error);
+            status.style.color = "red";
+            console.error("Fetch Error:", error);
         }
     }
 
-    // --- BAGONG SEARCH FUNCTION ---
     function filterTransactions() {
         const input = document.getElementById("txnSearch").value.toUpperCase();
         const tbody = document.getElementById("txnBody");
@@ -166,32 +177,20 @@
         let groupVisible = false;
 
         for (let i = 0; i < rows.length; i++) {
-            // Check kung ito ay simula ng group (may blue border top)
             if (rows[i].style.borderTop && rows[i].style.borderTop.includes("solid")) {
-                // I-apply visibility sa nakaraang group
-                if (currentGroupRows.length > 0) {
-                    applyVisibility(currentGroupRows, groupVisible);
-                }
-                // Reset para sa bagong group
+                if (currentGroupRows.length > 0) applyVisibility(currentGroupRows, groupVisible);
                 currentGroupRows = [rows[i]];
                 groupVisible = rows[i].innerText.toUpperCase().includes(input);
             } else {
                 currentGroupRows.push(rows[i]);
-                if (rows[i].innerText.toUpperCase().includes(input)) {
-                    groupVisible = true;
-                }
+                if (rows[i].innerText.toUpperCase().includes(input)) groupVisible = true;
             }
         }
-        // Apply para sa huling group
-        if (currentGroupRows.length > 0) {
-            applyVisibility(currentGroupRows, groupVisible);
-        }
+        if (currentGroupRows.length > 0) applyVisibility(currentGroupRows, groupVisible);
     }
 
     function applyVisibility(rows, isVisible) {
-        rows.forEach(row => {
-            row.style.display = isVisible ? "" : "none";
-        });
+        rows.forEach(row => { row.style.display = isVisible ? "" : "none"; });
     }
 
     window.onload = loadTransactions;

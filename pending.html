@@ -75,6 +75,7 @@
                 <i>✅</i> Pending Approvals <span class="sidebar-badge" id="main-pending-badge"></span>
             </a>
             <a href="smmg_transactions.html" class="menu-link"><i>💸</i> Transactions</a>
+            <a href="admin_stocks.html" class="menu-link"><i>📦</i> Global Inventory</a>
             <a href="transfer.html" class="menu-link"><i>🔄</i> Stock Transfer</a>
             <a href="stock_management.html" class="menu-link"><i>📦</i> Stock Management</a>
             <a href="index.html" class="menu-link" style="margin-top: auto; color: #ff5e57;"><i>🚪</i> Logout</a>
@@ -157,11 +158,13 @@
             const tableBody = document.getElementById('approval-table-body');
             const loadingState = document.getElementById('loading-state');
             const syncStatus = document.getElementById('sync-status');
-            const mainBadge = document.getElementById('main-badge');
+            // Inayos ang ID dito para mag-match sa HTML (main-pending-badge)
+            const mainBadge = document.getElementById('main-pending-badge');
             const countDisplay = document.getElementById('count-display');
 
             try {
-                const response = await fetch(`${config.url}?action=getAdminData`);
+                // Dinagdagan ng cache buster (?t=...) para laging fresh ang data
+                const response = await fetch(`${config.url}?action=getAdminData&t=${new Date().getTime()}`);
                 const data = await response.json();
                 const pendingItems = data.approvals ? data.approvals.filter(item => item.status === "PENDING") : [];
 
@@ -171,8 +174,12 @@
 
                 const count = pendingItems.length;
                 countDisplay.innerText = count;
-                mainBadge.innerText = count;
-                mainBadge.style.display = count > 0 ? "inline-block" : "none";
+                
+                // Safety check para sa mainBadge
+                if (mainBadge) {
+                    mainBadge.innerText = count;
+                    mainBadge.style.display = count > 0 ? "inline-block" : "none";
+                }
 
                 if (count === 0) {
                     tableBody.innerHTML = "";
@@ -203,9 +210,10 @@
                 tableBody.innerHTML = html;
 
             } catch (error) {
+                console.error("Fetch Error:", error);
                 syncStatus.innerText = "Offline";
                 syncStatus.style.color = "red";
-                loadingState.innerHTML = "<i>❌</i> Error loading data.";
+                loadingState.innerHTML = "<i>❌</i> Error loading data. Please use Live Server.";
             }
         }
 
@@ -228,19 +236,17 @@
             }
         }
 
-        // BAGONG FUNCTION PARA SA INDIVIDUAL REJECTION
         async function rejectItem(barcode) {
             const branch = document.getElementById('branch-selector').value;
             if (!confirm(`Sigurado ka bang i-REJECT ang barcode: ${barcode}? Mawawala ito sa listahan.`)) return;
 
             try {
-                // Ipinapadala ang barcode at action sa server
                 await fetch(`${BRANCH_CONFIG[branch].url}?action=rejectItem&barcode=${barcode}`, { 
                     method: 'POST', 
                     mode: 'no-cors' 
                 });
                 alert("Item Rejected.");
-                loadPendingStocks(); // Refresh table
+                loadPendingStocks(); 
             } catch (error) {
                 alert("Failed to reject item.");
             }

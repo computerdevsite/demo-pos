@@ -81,7 +81,7 @@
                     <label>VERIFY SELLER ID</label>
                     <div class="cashier-grid">
                         <label class="cashier-opt"><input type="radio" name="cashier" value="ARENAS" onchange="updateUI()">ARENAS</label>
-                        <label class="cashier-opt"><input type="radio" name="cashier" value="CLIMACO" onchange="updateUI()">CLIMACO</label>
+                        <label class="cashier-opt"><input type="radio" name="cashier" value="TANIELON" onchange="updateUI()">TANIELON</label>
                         <label class="cashier-opt"><input type="radio" name="cashier" value="KING KING" onchange="updateUI()">KING KING</label>
                         <label class="cashier-opt"><input type="radio" name="cashier" value="BUEMIO" onchange="updateUI()">BUEMIO</label>
                         <label class="cashier-opt"><input type="radio" name="cashier" value="BROZO" onchange="updateUI()">BROZO</label>
@@ -211,7 +211,6 @@
                 return;
             }
 
-            // --- CHECK FOR DUPLICATE BARCODE ---
             const isDuplicate = cart.some(item => item.barcode === barcodeValue && item.barcode !== "SERVICE");
             
             if (isDuplicate) {
@@ -352,7 +351,6 @@
             btnSave.innerText = "SAVING...";
             btnSave.disabled = true;
 
-            // Lahat ng String inputs dito ay naka .toUpperCase() para siguradong Capital sa Google Sheets
             const transactionData = {
                 action: "save_transaction", 
                 date: date,
@@ -374,6 +372,7 @@
             try {
                 await fetch(SHEETS_URL, {
                     method: 'POST',
+                    // mode: 'no-cors' dahil sa security policy ng GAS
                     mode: 'no-cors',
                     cache: 'no-cache',
                     body: JSON.stringify(transactionData)
