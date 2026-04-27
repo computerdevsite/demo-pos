@@ -6,8 +6,9 @@
     <title>SM NORTH EDSA - Receive Warehouse Delivery</title>
     <link href="css/pos.css" rel="stylesheet">
     <style>
-        body { display: flex; min-height: 100vh; background-color: #f4f7f6; overflow-x: hidden; }
-        .main-content { flex: 1; display: flex; flex-direction: column; }
+        body { display: flex; min-height: 100vh; background-color: #f4f7f6; overflow-x: hidden; margin: 0; }
+        .sidebar { width: 250px; background: #2c3e50; color: white; } /* Basic sidebar style para sa preview */
+        .main-content { flex: 1; display: flex; flex-direction: column; height: 100vh; }
         
         .sticky-search-header {
             position: sticky;
@@ -25,11 +26,37 @@
         .status-offline { background: #e74c3c; box-shadow: 0 0 8px #e74c3c; }
         .status-label { color: #666; text-transform: uppercase; letter-spacing: 0.5px; }
 
-        .delivery-container { padding: 20px; flex: 1; }
-        .data-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); color: #333; margin-bottom: 20px; }
+        .delivery-container { padding: 20px; flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+        .data-card { 
+            background: white; 
+            padding: 20px; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05); 
+            color: #333; 
+            display: flex; 
+            flex-direction: column;
+            max-height: 100%; /* Sinisiguro na hindi lalampas sa screen */
+        }
         
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        th { text-align: left; padding: 12px; border-bottom: 2px solid #eee; background-color: #2c3e50; color: white; position: sticky; top: 135px; z-index: 10; }
+        /* --- SCROLLABLE TABLE SETTINGS --- */
+        .table-wrapper {
+            overflow-y: auto;
+            margin-top: 15px;
+            border: 1px solid #eee;
+            flex: 1; /* Kinukuha ang natitirang space */
+        }
+
+        table { width: 100%; border-collapse: collapse; }
+        th { 
+            text-align: left; 
+            padding: 12px; 
+            border-bottom: 2px solid #eee; 
+            background-color: #2c3e50; 
+            color: white; 
+            position: sticky; 
+            top: 0; /* Nakadikit sa taas habang nag-scroll */
+            z-index: 10; 
+        }
         td { padding: 12px; border-bottom: 1px solid #eee; }
         
         .status-pill { padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; }
@@ -97,7 +124,7 @@
                         <button style="font-size:0.65rem; color:#666; cursor:pointer; background:none; border:none; text-decoration:underline;" onclick="clearLogs()">Clear Logs</button>
                     </div>
                     <div class="log-container" id="tracking-log">
-                        <div id="log-placeholder" style="color: #999; text-align: center; padding: 5px;">Ready for SMNE scans...</div>
+                        <div id="log-placeholder" style="color: #999; text-align: center; padding: 5px;">Ready for SMMG scans...</div>
                     </div>
                 </div>
             </div>
@@ -113,25 +140,27 @@
                     </div>
                 </div>
                 
-                <table>
-                    <thead>
-                        <tr>
-                            <th class="chk-cell"><input type="checkbox" id="mark-all" onclick="toggleAll(this)"></th>
-                            <th>Barcode</th>
-                            <th>Item Description</th>
-                            <th>Origin</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody id="warehouse-delivery-table"></tbody>
-                </table>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th class="chk-cell"><input type="checkbox" id="mark-all" onclick="toggleAll(this)"></th>
+                                <th>Barcode</th>
+                                <th>Item Description</th>
+                                <th>Origin</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="warehouse-delivery-table"></tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
+        // --- CONFIGURATION ---
         const WAREHOUSE_URL = "https://script.google.com/macros/s/AKfycbyAFoBQbe9NMq2IYVjqtCzQ3NJTsUEGDlb1uHQ1q483YNRInhI78aXPNWTLzn9oR6EmLQ/exec";
-        const BRANCH_URL = "https://script.google.com/macros/s/AKfycbxKnZHePSbSMqf1G_lcnF867kEL6Idq6yNEBWiu2XtklhljQlCnloSshXHXNoHY6wUi/exec"; 
 
         let currentPendingData = [];
         let notFoundCount = 0;
@@ -149,21 +178,22 @@
             tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 20px;">Loading SMNE Data...</td></tr>';
             
             try {
-                // Binago ang branch parameter to SMNE
-                const response = await fetch(`${WAREHOUSE_URL}?action=getAdminData&branch=SMNE`);
+                const response = await fetch(`${WAREHOUSE_URL}?action=getAdminData&branch=SM NORTH EDSA&t=${new Date().getTime()}`);
                 if (!response.ok) throw new Error();
                 const data = await response.json();
                 
-                currentPendingData = data.approvals ? data.approvals.filter(item => 
-                    item.status === "PENDING"
-                ).map(item => ({...item, barcode: String(item.barcode).trim()})) : [];
+                currentPendingData = data.approvals ? data.approvals.filter(item => {
+                    const status = String(item.status).trim().toUpperCase();
+                    const store = String(item.store).trim().toUpperCase();
+                    return status === "PENDING" && (store === "SM NORTH EDSA" || store === "SMNE");
+                }).map(item => ({...item, barcode: String(item.barcode).trim()})) : [];
                 
                 renderTable();
                 updateBulkButton();
                 updateDBStatus(true);
             } catch (error) { 
                 updateDBStatus(false);
-                tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 20px; color:red;">Failed to load deliveries.</td></tr>';
+                tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 20px; color:red;">Failed to load. Re-check WAREHOUSE_URL or Internet.</td></tr>';
             }
         }
 
@@ -173,11 +203,11 @@
             currentPendingData.forEach(item => {
                 html += `
                     <tr id="row-${item.barcode}-${item.id}">
-                        <td class="chk-cell"><input type="checkbox" class="row-chk" data-id="${item.id}" data-barcode="${item.barcode}" data-name="${item.name}" data-price="${item.price}" onclick="updateBulkButton()"></td>
+                        <td class="chk-cell"><input type="checkbox" class="row-chk" data-id="${item.id}" data-barcode="${item.barcode}" data-name="${item.name}" data-price="${item.price}" data-qty="${item.qty || 1}" onclick="updateBulkButton()"></td>
                         <td style="font-weight: bold;">${item.barcode}</td>
                         <td>${item.name}</td>
-                        <td><span class="status-pill in-transit">Warehouse</span></td>
-                        <td><button class="btn-receive" onclick="confirmReceipt('${item.id}', '${item.barcode}', '${item.name}', '${item.price}')">Receive</button></td>
+                        <td><span class="status-pill in-transit">${item.origin || 'Warehouse'}</span></td>
+                        <td><button class="btn-receive" onclick="confirmReceipt('${item.id}', '${item.barcode}', '${item.name}', '${item.price}', '${item.qty || 1}')">Receive</button></td>
                     </tr>
                 `;
             });
@@ -231,7 +261,7 @@
                     document.getElementById('not-found-counter').innerText = `Not Found: ${notFoundCount}`;
                     const logItem = document.createElement('div');
                     logItem.className = 'log-item log-fail';
-                    logItem.innerHTML = `<span>❌ ${val} Not in SMNE List</span> <span>${new Date().toLocaleTimeString()}</span>`;
+                    logItem.innerHTML = `<span>❌ ${val} Not Found</span> <span>${new Date().toLocaleTimeString()}</span>`;
                     log.prepend(logItem);
                 }
                 this.value = '';
@@ -243,7 +273,8 @@
             if (!selectedChks.length || !confirm(`Confirm receipt of ${selectedChks.length} items to SMNE Inventory?`)) return;
 
             const btn = document.getElementById('btn-approve-bulk');
-            btn.innerText = "Syncing SMNE...";
+            const originalText = btn.innerText;
+            btn.innerText = "Processing...";
             btn.disabled = true;
 
             try {
@@ -252,60 +283,66 @@
                         chk.getAttribute('data-id'),
                         chk.getAttribute('data-barcode'),
                         chk.getAttribute('data-name'),
-                        chk.getAttribute('data-price')
+                        chk.getAttribute('data-price'),
+                        chk.getAttribute('data-qty')
                     );
                 }
-                alert("Successfully received to SMNE Inventory.");
+                alert("All selected items received successfully.");
                 fetchWarehouseDeliveries();
                 clearLogs();
             } catch (e) {
-                alert("Error syncing data.");
+                alert("Error during sync. Please check logs.");
             } finally {
-                btn.innerText = "Approve Selected";
+                btn.innerText = originalText;
                 btn.disabled = false;
             }
         }
 
-        async function confirmReceipt(itemId, barcode, name, price) {
+        async function confirmReceipt(itemId, barcode, name, price, qty) {
             if(!confirm(`Receive ${barcode} into SMNE?`)) return;
             try {
-                await processReceipt(itemId, barcode, name, price);
-                alert("Stock successfully received by SMNE.");
+                await processReceipt(itemId, barcode, name, price, qty);
+                alert("Item received successfully.");
                 fetchWarehouseDeliveries();
             } catch (e) {
-                alert("Sync failed.");
+                alert("Sync failed. Check connection.");
             }
         }
 
-        async function processReceipt(id, barcode, name, price) {
-            const storeName = "SM NORTH EDSA"; // Tiyaking match ito sa Google Script mo
-
-            // 1. Mark as RECEIVED in Warehouse Database
-            await fetch(WAREHOUSE_URL, {
-                method: 'POST',
-                mode: 'no-cors',
-                body: JSON.stringify({ 
-                    action: "receive_from_warehouse", 
-                    id: id, 
-                    barcode: barcode,
-                    store: storeName 
-                })
-            });
-
-            // 2. Update the Inventory sheet in the SMNE BRANCH Database
-            await fetch(BRANCH_URL, {
-                method: 'POST',
-                mode: 'no-cors',
-                body: JSON.stringify({ 
-                    action: "directWarehouseUpdate", 
-                    barcode: barcode, 
-                    name: name, 
-                    price: price, 
-                    qty: 1 
-                })
-            });
+        async function processReceipt(id, barcode, name, price, qty) {
+            const storeName = "SM NORTH EDSA"; 
             
-            return true;
+            const finalUrl = WAREHOUSE_URL + 
+                "?action=receive_from_warehouse" +
+                "&id=" + encodeURIComponent(id) +
+                "&barcode=" + encodeURIComponent(barcode) +
+                "&name=" + encodeURIComponent(name) +
+                "&price=" + encodeURIComponent(price) +
+                "&qty=" + encodeURIComponent(qty || 1) +
+                "&store=" + encodeURIComponent(storeName);
+
+            const payload = JSON.stringify({ 
+                action: "receive_from_warehouse", 
+                id: id, 
+                barcode: barcode,
+                name: name,
+                price: price,
+                store: storeName,
+                qty: qty || 1
+            });
+
+            try {
+                await fetch(finalUrl, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'text/plain' },
+                    body: payload
+                });
+                return true;
+            } catch (e) {
+                console.error("Sync Error:", e);
+                throw e;
+            }
         }
 
         window.onload = fetchWarehouseDeliveries;

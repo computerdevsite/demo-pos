@@ -8,7 +8,7 @@
     <style>
         /* FORCE ALL INPUTS TO DISPLAY AS CAPITAL LETTERS WHILE TYPING */
         input[type="text"], .barcode-input {
-            text-transform: uppercase;
+            text-transform: none;
         }
     </style>
 </head>
@@ -18,12 +18,12 @@
         <div class="sidebar-header">SM NORTH EDSA</div>
         <div class="sidebar-menu">
             <a href="POS-SMNE.html" class="menu-item active"><i>🛒</i> POINT OF SALE</a>
-            <a href="transactions_smne.html" class="menu-item"><i>📜</i> TRANSACTIONS</a>
-            <a href="delivery_smne.html" class="menu-item"><i>🚚</i> STOCK DELIVERY</a>
-            <a href="pullout_smne.html" class="menu-item"><i>📤</i> STOCK PULL OUT</a>
-            <a href="cashier_approvals_smne.html" class="menu-item"><i>⏳</i> MY PENDING STOCKS</a>
-            <a href="smne_approval.html" class="menu-item"><i>🏢</i> Receive Warehouse</a>
-            <a href="stocks_smne.html" class="menu-item"><i>📦</i> CHECK STOCKS</a>
+            <a href="transactions_smne.html" class="menu-item" target="_blank"><i>📜</i> TRANSACTIONS</a>
+            <a href="delivery_smne.html" class="menu-item" target="_blank"><i>🚚</i> STOCK DELIVERY</a>
+            <a href="pullout_smne.html" class="menu-item" target="_blank"><i>📤</i> STOCK PULL OUT</a>
+            <a href="cashier_approvals_smne.html" class="menu-item" target="_blank"><i>⏳</i> MY PENDING STOCKS</a>
+            <a href="smne_approval.html" class="menu-item" target="_blank"><i>🏢</i> Receive Warehouse</a>
+            <a href="stocks_smne.html" class="menu-item" target="_blank"><i>📦</i> CHECK STOCKS</a>
             <a href="index.html" class="menu-item" style="margin-top: auto;"><i>🚪</i> LOGOUT</a>
         </div>
     </div>
@@ -211,7 +211,6 @@
                 return;
             }
 
-            // --- CHECK FOR DUPLICATE BARCODE ---
             const isDuplicate = cart.some(item => item.barcode === barcodeValue && item.barcode !== "SERVICE");
             
             if (isDuplicate) {
@@ -326,6 +325,11 @@
             const tin = document.getElementById('tin_number').value;
             const feeInput = document.getElementById('service_fee_input');
             const cashierInput = document.querySelector('input[name="cashier"]:checked');
+            
+            // KUNIN ANG DISCOUNT PARA MAIBABAS SA PRODUCT PRICE
+            const discInput = parseFloat(document.getElementById('manual_discount').value) || 0;
+            const otherInput = parseFloat(document.getElementById('other_deductions').value) || 0;
+            const totalDiscount = discInput + otherInput;
 
             if (!cashierInput) {
                 alert("PAKI-PILI MUNA ANG PANGALAN NG CASHIER BAGO I-SAVE!");
@@ -343,11 +347,27 @@
                 return;
             }
 
-            const totalDisplay = document.getElementById('total-val').innerText;
-            const totalValue = parseFloat(totalDisplay.replace(/[₱,]/g, '')) || 0;
+            // LOGIC: I-DISTRIBUTE ANG DISCOUNT SA PRODUCTS LANG (HINDI KASALI SERVICE FEE)
+            const productItems = cart.filter(item => item.barcode !== "SERVICE");
+            const productCount = productItems.length;
+            const discountPerItem = productCount > 0 ? totalDiscount / productCount : 0;
 
-            const vatableSales = (totalValue / 1.12).toFixed(2);
-            const vatAmount = (totalValue - parseFloat(vatableSales)).toFixed(2);
+            const updatedCart = cart.map(item => {
+                let finalPrice = item.price;
+                if (item.barcode !== "SERVICE") {
+                    finalPrice = Math.max(0, item.price - discountPerItem);
+                }
+                return {
+                    ...item,
+                    price: parseFloat(finalPrice.toFixed(2)),
+                    barcode: item.barcode.toUpperCase(),
+                    name: item.name.toUpperCase()
+                };
+            });
+
+            const finalGrossTotal = updatedCart.reduce((sum, item) => sum + item.price, 0);
+            const vatableSales = (finalGrossTotal / 1.12).toFixed(2);
+            const vatAmount = (finalGrossTotal - parseFloat(vatableSales)).toFixed(2);
 
             btnSave.innerText = "SAVING...";
             btnSave.disabled = true;
@@ -360,14 +380,10 @@
                 name: name.toUpperCase(),
                 address: address ? address.toUpperCase() : "N/A",
                 seller: cashierInput.value.toUpperCase(),
-                total: totalValue.toFixed(2),
+                total: finalGrossTotal.toFixed(2),
                 vatable_sales: vatableSales,
                 vat_amount: vatAmount,
-                items: cart.map(item => ({
-                    ...item,
-                    barcode: item.barcode.toUpperCase(),
-                    name: item.name.toUpperCase()
-                })) 
+                items: updatedCart 
             };
 
             try {
