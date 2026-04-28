@@ -355,7 +355,7 @@
             const updatedCart = cart.map(item => {
                 let finalPrice = item.price;
                 if (item.barcode !== "SERVICE") {
-                    finalPrice = Math.max(0, item.price - discountPerItem);
+                    finalPrice = Math.max(0, item.price);
                 }
                 return {
                     ...item,
@@ -365,7 +365,7 @@
                 };
             });
 
-            const finalGrossTotal = updatedCart.reduce((sum, item) => sum + item.price, 0);
+            const finalGrossTotal = updatedCart.reduce((sum, item) => sum + item.price, 0)-totalDiscount;
             const vatableSales = (finalGrossTotal / 1.12).toFixed(2);
             const vatAmount = (finalGrossTotal - parseFloat(vatableSales)).toFixed(2);
 
