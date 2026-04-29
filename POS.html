@@ -375,6 +375,19 @@
             btnSave.innerText = "SAVING...";
             btnSave.disabled = true;
 
+            // 1. Gumawa ng kopya ng cart
+            let finalItemsForSheets = [...updatedCart];
+
+            // 2. Kung may discount, i-push ito bilang isang "item" sa listahan
+            if (totalDiscount > 0) {
+                finalItemsForSheets.push({
+                barcode: "DISCOUNT",
+                name: "TOTAL TRANSACTION DISCOUNT",
+                price: -parseFloat(totalDiscount.toFixed(2)), // Negative value para bumaba ang total
+                quantity: 1
+                });
+            }
+
             const transactionData = {
                 action: "save_transaction", 
                 date: date,
@@ -386,7 +399,7 @@
                 total: finalGrossTotal.toFixed(2),
                 vatable_sales: vatableSales,
                 vat_amount: vatAmount,
-                items: updatedCart 
+                items: finalItemsForSheets 
             };
 
             try {
