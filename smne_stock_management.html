@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>North Edsa Stock - Store Management System</title>
+    <link href="css/pos.css" rel="stylesheet">
+    <style>
+
+        .menu-item {
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            color: #bdc3c7;
+            text-decoration: none;
+            transition: 0.2s;
+            font-size: 0.95rem;
+        }
+
+        .menu-item:hover {
+            background: rgba(255,255,255,0.05);
+            color: white;
+        }
+
+        .menu-item.active {
+            background: var(--accent);
+            color: white;
+            border-left: 5px solid #fff;
+        }
+
+        .menu-item i { margin-right: 12px; width: 20px; text-align: center; }
+
+        /* Main Content */
+        .main-content {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .top-bar {
+            height: 60px;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 25px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .top-bar h2 {
+            font-size: 1.2rem;
+            color: var(--primary);
+            margin: 0;
+        }
+
+        .branch-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .badge-branch {
+            background: #e1f5fe;
+            color: #0288d1;
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            border: 1px solid #b3e5fc;
+        }
+
+        /* Stock Layout */
+        .content-body {
+            padding: 20px;
+            overflow-y: auto;
+            height: calc(100vh - 60px);
+        }
+
+        .controls-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        input[type="text"] {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+        }
+
+        .search-box { flex-grow: 1;}
+
+        .filter-select {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: white;
+            min-width: 150px;
+        }
+
+        .btn-refresh {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.3s;
+        }
+
+        .btn-refresh:hover { opacity: 0.9; }
+
+        /* Table Design */
+        .table-container {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        th {
+            background: var(--primary);
+            color: white;
+            padding: 15px;
+            text-align: left;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.5px;
+        }
+
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #eee;
+            color: var(--text-dark);
+        }
+
+        tr:hover { background: #f9f9f9; }
+
+        /* Status Badges */
+        .status-badge {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .good { background: #d4edda; color: #155724; }
+        .warning { background: #fff3cd; color: #856404; }
+        .critical { background: #f8d7da; color: #721c24; }
+
+        #sync-status { font-size: 0.75rem; font-weight: bold; }
+        .loading-text { text-align: center; padding: 40px; color: #95a5a6; }
+
+    </style>
+</head>
+<body>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-header">SM NORTH EDSA</div>
+        <div class="sidebar-menu">
+            <a href="POS-SMNE.html" class="menu-item"><i>🛒</i> POINT OF SALE</a>
+            <a href="transactions_smne.html" class="menu-item"><i>📜</i> TRANSACTIONS</a>
+            <a href="delivery_smne.html" class="menu-item" ><i>🚚</i> STOCK DELIVERY</a>
+            <a href="pullout_smne.html" class="menu-item" ><i>📤</i> STOCK PULL OUT</a>
+            <a href="cashier_approvals_smne.html" class="menu-item" ><i>⏳</i> MY PENDING STOCKS</a>
+            <a href="smne_approval.html" class="menu-item"><i>🏢</i> Receive Warehouse</a>
+            <a href="stocks_smne.html" class="menu-item" ><i>📦</i> CHECK STOCKS</a>
+            <a href="smne_stock_management.html" class="menu-item active" ><i>📦</i> SUMMARY</a>
+            <a href="index.html" class="menu-item" style="margin-top: auto;"><i>🚪</i> LOGOUT</a>
+        </div>
+
+       
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <div class="top-bar">
+            <h2>Inventory Management</h2>
+            <div class="branch-info">
+                <span id="sync-status" style="color: var(--success);">● SYNCED</span>
+                <span class="badge-branch">SM NORTH EDSA BRANCH</span>
+            </div>
+        </div>
+
+        <div class="content-body">
+            <div class="controls-card">
+                <input type="text" id="searchInput" class="search-box" placeholder="SEARCH PRODUCT NAME..." oninput="filterTable()">
+                <select id="statusFilter" class="filter-select" onchange="filterTable()">
+                    <option value="all">ALL STOCK LEVELS</option>
+                    <option value="critical">CRITICAL (0-10)</option>
+                    <option value="warning">LOW STOCK (11-30)</option>
+                    <option value="good">HEALTHY (30+)</option>
+                </select>
+                <button class="btn-refresh" onclick="fetchStockData()">REFRESH</button>
+            </div>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Product Name</th>
+                            <th>Category</th>
+                            <th>Current Qty</th>
+                            <th>Condition</th>
+                        </tr>
+                    </thead>
+                    <tbody id="stock-body">
+                        <tr><td colspan="4" class="loading-text">Fetching live data from SM North Edsa...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const MEGAMALL_API_URL = "https://script.google.com/macros/s/AKfycbxKnZHePSbSMqf1G_lcnF867kEL6Idq6yNEBWiu2XtklhljQlCnloSshXHXNoHY6wUi/exec";
+        let localStockData = [];
+
+        async function fetchStockData() {
+            const statusIndicator = document.getElementById('sync-status');
+            statusIndicator.innerText = "● SYNCING...";
+            statusIndicator.style.color = "#f39c12";
+
+            try {
+                const response = await fetch(MEGAMALL_API_URL + "?action=summary");
+                const data = await response.json();
+                
+                localStockData = Array.isArray(data) ? data : (data.inventory || []);
+                renderTable(localStockData);
+                
+                statusIndicator.innerText = "● SYNCED";
+                statusIndicator.style.color = "var(--success)";
+            } catch (e) {
+                statusIndicator.innerText = "● OFFLINE";
+                statusIndicator.style.color = "var(--danger)";
+                document.getElementById('stock-body').innerHTML = '<tr><td colspan="4" class="loading-text" style="color: var(--danger);">Connection Error. Please check API.</td></tr>';
+            }
+        }
+
+        function renderTable(items) {
+            const tbody = document.getElementById('stock-body');
+            let html = "";
+
+            if (!items || items.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="loading-text">No items found.</td></tr>';
+                return;
+            }
+
+            items.forEach(item => {
+                const name = (item.item_name || item.name || "Unknown").toUpperCase();
+                const qty = parseInt(item.quantity || item.stock) || 0; 
+                
+                let badgeClass = "good";
+                let condition = "Healthy";
+
+                if (qty <= 10) { badgeClass = "critical"; condition = "Critical"; }
+                else if (qty <= 30) { badgeClass = "warning"; condition = "Low Stock"; }
+
+                html += `
+                    <tr>
+                        <td style="font-weight: 600;">${name}</td> 
+                        <td>${(item.category || 'General').toUpperCase()}</td>
+                        <td style="font-weight: bold;">${qty} PCS</td>
+                        <td><span class="status-badge ${badgeClass}">${condition}</span></td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = html;
+        }
+
+        function filterTable() {
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const filter = document.getElementById('statusFilter').value;
+
+            const filtered = localStockData.filter(item => {
+                const name = (item.item_name || item.name || "").toLowerCase();
+                const matchesSearch = name.includes(search);
+                const qty = parseInt(item.quantity || item.stock) || 0; 
+                let matchesStatus = true;
+
+                if (filter === 'critical') matchesStatus = qty <= 10;
+                else if (filter === 'warning') matchesStatus = qty > 10 && qty <= 30;
+                else if (filter === 'good') matchesStatus = qty > 30;
+
+                return matchesSearch && matchesStatus;
+            });
+            renderTable(filtered);
+        }
+
+        window.onload = fetchStockData;
+    </script>
+</body>
+</html>

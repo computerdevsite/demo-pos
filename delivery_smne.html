@@ -60,6 +60,7 @@
             <a href="cashier_approvals_smne.html" class="menu-item"><i>⏳</i> MY PENDING STOCKS</a>
             <a href="smne_approval.html" class="menu-item"><i>🏢</i> Receive Warehouse</a>
             <a href="stocks_smne.html" class="menu-item"><i>📦</i> CHECK STOCKS</a>
+            <a href="smne_stock_management.html" class="menu-item" ><i>📦</i> SUMMARY</a>
             <a href="index.html" class="menu-item" style="margin-top: auto;"><i>🚪</i> LOGOUT</a>
         </div>
     </div>
@@ -81,14 +82,16 @@
                     <datalist id="inventory-data"></datalist>
                 </div>
 
-                <div class="form-group">
-                    <label>Unique Barcode / Serial</label>
-                    <input type="text" id="dr_barcode" placeholder="I-scan o i-type ang barcode..." autofocus onkeypress="handleBarcodeEntry(event)">
-                </div>
+                
 
                 <div class="form-group">
                     <label>Item Price</label>
                     <input type="number" id="dr_price" placeholder="0.00" onkeypress="handleEnter(event, 'dr_barcode')">
+                </div>
+
+                <div class="form-group">
+                    <label>Unique Barcode / Serial</label>
+                    <input type="text" id="dr_barcode" placeholder="I-scan o i-type ang barcode..." autofocus onkeypress="handleBarcodeEntry(event)">
                 </div>
 
                 <div style="background: #f8f9fa; padding: 15px; border-radius: 6px; border-left: 4px solid var(--accent); margin-top: 20px;">
