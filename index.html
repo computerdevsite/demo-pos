@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Portal Login</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #0f0c29; background: linear-gradient(to right, #24243e, #302b63, #0f0c29); color: white; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .container { background: rgba(255, 255, 255, 0.1); padding: 30px; border-radius: 15px; box-shadow: 0 8px 32px rgba(0,0,0,0.3); width: 100%; max-width: 350px; text-align: center; backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); }
+        
+        .input-group { position: relative; width: 100%; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border: none; border-radius: 5px; outline: none; box-sizing: border-box; background: rgba(255, 255, 255, 0.9); color: #333; }
+        
+        .toggle-pass { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #333; font-size: 12px; font-weight: bold; user-select: none; }
+        
+        button { width: 100%; padding: 12px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; transition: 0.3s; margin-top: 10px; }
+        .btn-login { background: #00d2ff; color: #fff; }
+        .btn-forgot { background: transparent; color: #00d2ff; text-decoration: underline; font-size: 13px; margin-top: 15px; cursor: pointer; border: none; }
+        .btn-update { background: #4cd137; color: #fff; }
+        .btn-back { background: #7f8c8d; color: #fff; }
+        
+        #forgot-panel { display: none; }
+        #status { font-size: 14px; margin-top: 15px; min-height: 20px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- LOGIN FORM -->
+    <div id="login-form">
+        <h2>LOGIN</h2>
+        <input type="text" id="user" placeholder="Username">
+        <div class="input-group">
+            <input type="password" id="pass" placeholder="Password">
+            <span class="toggle-pass" onclick="toggleVisibility('pass')">SHOW</span>
+        </div>
+        <button class="btn-login" id="loginBtn" onclick="handleLogin()">Login</button>
+        <button class="btn-forgot" onclick="toggleForm(true)">Forgot Password?</button>
+    </div>
+
+    <!-- FORGOT PASSWORD FORM -->
+    <div id="forgot-panel">
+        <h2>Reset Password</h2>
+        <input type="text" id="f-user" placeholder="Confirm Username">
+        <div class="input-group">
+            <input type="password" id="f-old-pass" placeholder="Old Password">
+            <span class="toggle-pass" onclick="toggleVisibility('f-old-pass')">SHOW</span>
+        </div>
+        <div class="input-group">
+            <input type="password" id="f-new-pass" placeholder="New Password">
+            <span class="toggle-pass" onclick="toggleVisibility('f-new-pass')">SHOW</span>
+        </div>
+        <button class="btn-update" id="updateBtn" onclick="handleReset()">Update Password</button>
+        <button class="btn-back" onclick="toggleForm(false)">Back to Login</button>
+    </div>
+
+    <div id="status"></div>
+</div>
+
+<script>
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyJZNTKiPHj3P3eJCRDOzkAcRX7OjDL1ATZr6ILR-JK6VPwlpzarhFp_jQRhlk_pFN-sQ/exec";
+
+    const REDIRECT_URLS = {
+        "admin": "admin.html", 
+        "smne": "POS-SMNE.html",
+        "smmg": "POS.html"
+    };
+
+    // --- FUNCTION: ENTER KEY SUPPORT ---
+    document.addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') {
+            if (document.getElementById('login-form').style.display !== 'none') {
+                handleLogin();
+            } else {
+                handleReset();
+            }
+        }
+    });
+
+    // --- FUNCTION: TOGGLE PASSWORD VIEW ---
+    function toggleVisibility(id) {
+        const x = document.getElementById(id);
+        const btn = x.nextElementSibling;
+        if (x.type === "password") {
+            x.type = "text";
+            btn.innerText = "HIDE";
+        } else {
+            x.type = "password";
+            btn.innerText = "SHOW";
+        }
+    }
+
+    function toggleForm(isForgot) {
+        document.getElementById('login-form').style.display = isForgot ? 'none' : 'block';
+        document.getElementById('forgot-panel').style.display = isForgot ? 'block' : 'none';
+        document.getElementById('status').innerText = "";
+    }
+
+    async function handleLogin() {
+        const user = document.getElementById('user').value;
+        const pass = document.getElementById('pass').value;
+        const status = document.getElementById('status');
+        const btn = document.getElementById('loginBtn');
+
+        if(!user || !pass) { status.innerText = "Fill in all fields."; return; }
+
+        btn.disabled = true;
+        status.style.color = "#00d2ff";
+        status.innerText = "Authenticating...";
+
+        try {
+            const response = await fetch(WEB_APP_URL, {
+                method: "POST",
+                body: JSON.stringify({ action: "login", username: user, password: pass })
+            });
+            const result = await response.json();
+
+            if (result.result === "success") {
+                status.style.color = "#4cd137";
+                status.innerText = "Access Granted! Redirecting...";
+                setTimeout(() => { window.location.href = REDIRECT_URLS[result.role] || "index.html"; }, 1000);
+            } else {
+                status.style.color = "#ff4757";
+                status.innerText = result.message;
+            }
+        } catch (err) {
+            status.innerText = "Connection error.";
+        } finally { btn.disabled = false; }
+    }
+
+    async function handleReset() {
+        const user = document.getElementById('f-user').value;
+        const oldP = document.getElementById('f-old-pass').value;
+        const newP = document.getElementById('f-new-pass').value;
+        const status = document.getElementById('status');
+        const btn = document.getElementById('updateBtn');
+
+        if(!user || !oldP || !newP) { status.innerText = "Fill in all fields."; return; }
+
+        btn.disabled = true;
+        status.style.color = "#00d2ff";
+        status.innerText = "Verifying...";
+
+        try {
+            const response = await fetch(WEB_APP_URL, {
+                method: "POST",
+                body: JSON.stringify({ action: "changePassword", username: user, oldPassword: oldP, newPassword: newP })
+            });
+            const result = await response.json();
+
+            if(result.result === "success") {
+                status.style.color = "#4cd137";
+                alert("Success! Password changed.");
+                toggleForm(false);
+            } else {
+                status.style.color = "#ff4757";
+                status.innerText = result.message;
+            }
+        } catch (err) {
+            status.innerText = "Error updating password.";
+        } finally { btn.disabled = false; }
+    }
+</script>
+
+</body>
+</html>
