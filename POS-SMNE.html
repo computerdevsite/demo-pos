@@ -173,6 +173,23 @@
                 } else {
                     inventory = result.inventory || []; 
                     
+                    // --- GINALAW: MANUAL OVERRIDE PARA SA SI NUMBER (HTML SIDE ONLY) ---
+                    // Imbes na result.nextSI, kukunin natin ang pinakahuli sa result.transactions
+                    if (result.transactions && result.transactions.length > 0) {
+                        const allTxns = result.transactions;
+                        const lastTxn = allTxns[allTxns.length - 1]; // Kukunin ang pinakahuling record
+                        const lastSI = parseInt(lastTxn.si.replace(/[^\d]/g, ""));
+                        
+                        const siField = document.getElementById('si_number');
+                        if (siField && !isNaN(lastSI)) {
+                            siField.value = (lastSI + 1).toString(); // Dito natin itatama ang 4457 + 1 = 4458
+                        }
+                    } else if (result.nextSI) {
+                        // Fallback kung walang transaction record pa
+                        document.getElementById('si_number').value = result.nextSI;
+                    }
+                    // ---------------------------------------------------------
+                    
                     if(indicator) {
                         indicator.innerText = "(SHEETS LINKED: " + inventory.length + " ITEMS)";
                         indicator.style.color = "#27ae60";
