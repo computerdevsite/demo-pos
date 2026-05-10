@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SMMG Inventory - Accurate View</title>
+    <title>SMMG Inventory - Filtered View</title>
     <style>
         :root {
             --gs-header-bg: #000000;
@@ -16,11 +16,13 @@
         
         .top-navbar { padding: 10px 20px; border-bottom: 1px solid #dcdcdc; display: flex; justify-content: space-between; align-items: center; }
         
-        .control-bar { padding: 10px 20px; background: #f8f9fa; border-bottom: 1px solid var(--gs-border); display: flex; gap: 10px; }
+        .control-bar { padding: 10px 20px; background: #f8f9fa; border-bottom: 1px solid var(--gs-border); display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
         
-        .search-box { padding: 8px; border: 1px solid #ced4da; border-radius: 4px; width: 300px; }
+        .search-box, .date-selector { padding: 8px; border: 1px solid #ced4da; border-radius: 4px; font-size: 14px; }
+        .search-box { width: 250px; }
         
         .btn-refresh { background: var(--google-blue); color: white; border: none; padding: 8px 20px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .btn-clear { background: #6c757d; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-size: 12px; }
 
         .table-container { flex-grow: 1; overflow: auto; }
         
@@ -32,20 +34,28 @@
         
         .text-left { text-align: left; padding-left: 15px; }
         
-        /* Remark Colors */
         .remark-warehouse { color: #1a73e8; font-weight: bold; }
         .remark-approved { color: #0b8043; font-weight: bold; }
+        
+        label { font-size: 12px; font-weight: bold; color: #555; }
     </style>
 </head>
 <body>
 
     <div class="top-navbar">
-        <strong>SMMG - INVENTORY LOGS</strong>
+        <strong>SMNE - INVENTORY LOGS</strong>
         <div id="status" style="font-size: 12px; color: #0b8043;">● SYSTEM READY</div>
     </div>
 
     <div class="control-bar">
         <input type="text" id="searchInput" class="search-box" placeholder="Search Barcode or Item..." oninput="filterData()">
+        
+        <div style="display: flex; align-items: center; gap: 5px;">
+            <label>Filter Date:</label>
+            <input type="date" id="dateFilter" class="date-selector" onchange="filterData()">
+            <button class="btn-clear" onclick="clearFilters()">Clear</button>
+        </div>
+
         <button class="btn-refresh" onclick="fetchInventory()">REFRESH DATA</button>
     </div>
 
@@ -74,14 +84,9 @@
         async function fetchInventory() {
             document.getElementById('status').innerText = "● SYNCING...";
             try {
-                // Pinapagana natin ang fetch sa URL mo
                 const response = await fetch(`${WEB_APP_URL}?action=getAdminData`);
                 const result = await response.json();
-                
-                // DAHIL SABLAY ANG 'inventory' object sa AppScript mo (kulang ng columns),
-                // itong HTML na mismo ang mag-o-organize kung sakaling blangko ang properties.
                 rawInventory = result.inventory || [];
-                
                 renderTable(rawInventory);
                 document.getElementById('status').innerText = "● LIVE: " + rawInventory.length + " ITEMS";
             } catch (e) {
@@ -93,11 +98,13 @@
             const tbody = document.getElementById('inventory-body');
             tbody.innerHTML = "";
 
+            if(data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="padding:20px; color:red;">No records found for the selected filter.</td></tr>';
+                return;
+            }
+
             data.forEach(item => {
                 const tr = document.createElement('tr');
-                
-                // HTML FIX: Kung N/A ang lumalabas, ibig sabihin hindi 'timestamp' ang tawag ng AppScript.
-                // Sinusubukan natin dito ang iba't ibang posibleng pangalan:
                 const timeStr = item.timestamp || item.time_stamp || item.date || ""; 
                 const remarkStr = item.remark || item.remarks || ""; 
 
@@ -118,12 +125,39 @@
         }
 
         function filterData() {
-            const val = document.getElementById('searchInput').value.toLowerCase();
-            const filtered = rawInventory.filter(i => 
-                (i.name && i.name.toLowerCase().includes(val)) || 
-                (i.barcode && i.barcode.toString().includes(val))
-            );
+            const searchVal = document.getElementById('searchInput').value.toLowerCase();
+            const dateVal = document.getElementById('dateFilter').value; // Format: YYYY-MM-DD
+
+            const filtered = rawInventory.filter(item => {
+                const timeStr = (item.timestamp || item.time_stamp || item.date || "").toString();
+                
+                // 1. Check Search Bar (Name or Barcode)
+                const matchesSearch = (item.name && item.name.toLowerCase().includes(searchVal)) || 
+                                     (item.barcode && item.barcode.toString().includes(searchVal));
+
+                // 2. Check Date Selector
+                let matchesDate = true;
+                if (dateVal) {
+                    // Kino-convert natin ang timestamp (M/D/YYYY) para magtugma sa HTML Date input (YYYY-MM-DD)
+                    // Note: Ang Apps Script ay karaniwang nagbabalik ng "4/27/2026, 11:55:41 PM"
+                    const rowDate = new Date(timeStr);
+                    const filterDate = new Date(dateVal);
+                    
+                    matchesDate = rowDate.getFullYear() === filterDate.getFullYear() &&
+                                  rowDate.getMonth() === filterDate.getMonth() &&
+                                  rowDate.getDate() === filterDate.getDate();
+                }
+
+                return matchesSearch && matchesDate;
+            });
+
             renderTable(filtered);
+        }
+
+        function clearFilters() {
+            document.getElementById('searchInput').value = "";
+            document.getElementById('dateFilter').value = "";
+            renderTable(rawInventory);
         }
 
         window.onload = fetchInventory;

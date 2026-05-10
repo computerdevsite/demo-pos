@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMMG - Audit History Viewer</title>
+    <style>
+        :root {
+            --matched: #28a745;
+            --loss: #dc3545;
+            --dark: #212529;
+        }
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; margin: 0; padding: 20px; }
+        .container { max-width: 1000px; margin: auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.08); }
+        
+        h2 { text-align: center; color: var(--dark); border-bottom: 2px solid #eee; padding-bottom: 15px; }
+
+        .filter-section { 
+            display: flex; 
+            gap: 15px; 
+            background: #f8f9fa; 
+            padding: 20px; 
+            border-radius: 10px; 
+            margin-bottom: 20px;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #ddd;
+        }
+
+        label { font-weight: bold; font-size: 14px; }
+        input[type="date"] { padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 14px; }
+
+        .btn-view { background: #007bff; color: white; border: none; padding: 10px 25px; border-radius: 5px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        .btn-view:hover { background: #0056b3; }
+
+        .summary-cards { display: flex; gap: 15px; margin-bottom: 20px; }
+        .card { flex: 1; padding: 15px; border-radius: 8px; text-align: center; color: white; font-weight: bold; }
+        .card-total { background: #6c757d; }
+        .card-matched { background: var(--matched); }
+        .card-loss { background: var(--loss); }
+        .card span { display: block; font-size: 22px; margin-top: 5px; }
+
+        .table-container { max-height: 500px; overflow-y: auto; border: 1px solid #eee; border-radius: 8px; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        thead th { background: var(--dark); color: white; padding: 12px; position: sticky; top: 0; text-align: left; }
+        tbody td { padding: 10px; border-bottom: 1px solid #eee; }
+
+        .status-badge { padding: 4px 8px; border-radius: 4px; color: white; font-size: 11px; font-weight: bold; }
+        .bg-matched { background: var(--matched); }
+        .bg-loss { background: var(--loss); }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>SMMG - AUDIT HISTORY VIEWER</h2>
+
+    <div class="filter-section">
+        <label>Select Audit Date:</label>
+        <input type="date" id="dateSelector">
+        <button onclick="fetchHistory()" class="btn-view">VIEW HISTORY</button>
+    </div>
+
+    <div class="summary-cards" id="summarySection" style="display: none;">
+        <div class="card card-total">Total Processed<span id="txtTotal">0</span></div>
+        <div class="card card-matched">Total Matched<span id="txtMatched">0</span></div>
+        <div class="card card-loss">Total Losses<span id="txtLoss">0</span></div>
+    </div>
+
+    <div class="table-container">
+        <table id="historyTable">
+            <thead>
+                <tr>
+                    <th>TIME STAMP</th>
+                    <th>BARCODE</th>
+                    <th>ITEM NAME</th>
+                    <th>AUDIT STATUS</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td colspan="4" style="text-align:center; padding:30px; color:#999;">Select a date to view audit logs.</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    // PASTE YOUR DEPLOYED URL HERE
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbz9y-5nsRLPuGMkc9WZ3Fk9-SfkgAqh5manipmZ284kKYbu4PAL-xpoaNJe-OU1wTiR4A/exec";
+
+    async function fetchHistory() {
+        const selectedDate = document.getElementById('dateSelector').value;
+        if (!selectedDate) {
+            alert("Please select a date first.");
+            return;
+        }
+
+        const tbody = document.querySelector('#historyTable tbody');
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:30px;">Loading history data...</td></tr>';
+
+        try {
+            const resp = await fetch(`${WEB_APP_URL}?action=fetchHistory`);
+            const allData = await resp.json();
+            
+            // I-filter ang data base sa piniling date
+            const filtered = allData.filter(item => {
+                if (!item.timestamp) return false;
+                const itemDate = new Date(item.timestamp).toISOString().split('T')[0];
+                return itemDate === selectedDate;
+            });
+
+            renderTable(filtered);
+        } catch (e) {
+            alert("Error fetching history. Make sure you deployed the script correctly.");
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:red;">Failed to load data.</td></tr>';
+        }
+    }
+
+    function renderTable(data) {
+        const tbody = document.querySelector('#historyTable tbody');
+        const summary = document.getElementById('summarySection');
+        
+        if (data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:30px; color:red; font-weight:bold;">No audit records found for this date.</td></tr>';
+            summary.style.display = "none";
+            return;
+        }
+
+        let matched = 0;
+        tbody.innerHTML = data.map(item => {
+            const isMatched = item.status === "MATCHED";
+            if (isMatched) matched++;
+            
+            // Format Timestamp for readable display
+            const time = new Date(item.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+
+            return `
+                <tr>
+                    <td>${time}</td>
+                    <td>${item.branchBarcode}</td>
+                    <td>${item.branchName}</td>
+                    <td><span class="status-badge ${isMatched ? 'bg-matched' : 'bg-loss'}">${item.status}</span></td>
+                </tr>
+            `;
+        }).join('');
+
+        // Update Summary Cards
+        summary.style.display = "flex";
+        document.getElementById('txtTotal').innerText = data.length;
+        document.getElementById('txtMatched').innerText = matched;
+        document.getElementById('txtLoss').innerText = data.length - matched;
+    }
+
+    // Default to today's date
+    window.onload = () => {
+        document.getElementById('dateSelector').valueAsDate = new Date();
+    };
+</script>
+</body>
+</html>

@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMMG Audit System</title>
+    <style>
+        :root {
+            --matched: #28a745;
+            --loss: #dc3545;
+            --dark: #212529;
+        }
+        body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; margin: 0; padding: 20px; }
+        .container { max-width: 900px; margin: auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        h2 { text-align: center; color: var(--dark); margin-bottom: 25px; border-bottom: 3px solid #eee; padding-bottom: 10px; }
+        
+        .header-controls { display: flex; gap: 10px; margin-bottom: 20px; }
+        .btn { flex: 1; padding: 12px; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; transition: 0.3s; }
+        .btn-load { background: #007bff; color: white; }
+        .btn-save { background: var(--matched); color: white; display: none; }
+        .btn:hover { opacity: 0.9; transform: translateY(-1px); }
+
+        .stats { display: flex; justify-content: space-between; background: #fff; border: 1px solid #ddd; padding: 15px; border-radius: 10px; margin-bottom: 20px; }
+        .stat-box { text-align: center; flex: 1; }
+        .stat-box span { display: block; font-size: 20px; font-weight: bold; }
+
+        .scanner-section { text-align: center; margin-bottom: 25px; }
+        input#scanner { width: 80%; padding: 15px; font-size: 18px; border: 2px solid #007bff; border-radius: 10px; outline: none; text-align: center; }
+        input#scanner:disabled { border-color: #ccc; background: #fafafa; }
+
+        .table-container { max-height: 450px; overflow-y: auto; border: 1px solid #eee; border-radius: 8px; }
+        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        thead th { background: var(--dark); color: white; padding: 12px; position: sticky; top: 0; }
+        tbody td { padding: 12px; border-bottom: 1px solid #eee; }
+        
+        .row-matched { background-color: #e8f5e9; color: var(--matched); font-weight: bold; }
+        .row-loss { background-color: #ffebee; color: var(--loss); font-weight: bold; }
+        .badge { padding: 4px 8px; border-radius: 4px; font-size: 11px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>SMMG INVENTORY AUDIT</h2>
+    
+    <div class="header-controls">
+        <button onclick="loadBranchItems()" class="btn btn-load" id="loadBtn">LOAD BRANCH INVENTORY</button>
+    </div>
+
+    <div class="stats">
+        <div class="stat-box">Total Items<span id="totalTxt">0</span></div>
+        <div class="stat-box" style="color:var(--matched)">Matched<span id="matchedTxt">0</span></div>
+        <div class="stat-box" style="color:var(--loss)">Losses<span id="lossTxt">0</span></div>
+    </div>
+
+    <div class="scanner-section">
+        <input type="text" id="scanner" placeholder="Click 'Load' then start scanning..." disabled>
+    </div>
+
+    <div class="table-container">
+        <table id="auditTable">
+            <thead>
+                <tr>
+                    <th>BARCODE</th>
+                    <th>ITEM NAME</th>
+                    <th>AUDIT STATUS</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td colspan="3" style="text-align:center; padding:30px; color:#999;">No data loaded.</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <button onclick="submitAudit()" id="saveBtn" class="btn btn-save">SAVE AUDIT TO HISTORY</button>
+</div>
+
+<script>
+    // PASTE YOUR DEPLOYED URL HERE
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbz9y-5nsRLPuGMkc9WZ3Fk9-SfkgAqh5manipmZ284kKYbu4PAL-xpoaNJe-OU1wTiR4A/exec";
+    let auditedList = [];
+
+    async function loadBranchItems() {
+        const btn = document.getElementById('loadBtn');
+        btn.innerText = "Fetching Data...";
+        btn.disabled = true;
+
+        try {
+            const resp = await fetch(`${WEB_APP_URL}?action=fetchFromBranch`);
+            const data = await resp.json();
+            
+            auditedList = data.map(item => ({
+                branchBarcode: item.barcode,
+                branchName: item.name,
+                auditBarcode: "---",
+                status: "LOSS / MISSING"
+            }));
+            
+            document.getElementById('scanner').disabled = false;
+            document.getElementById('scanner').focus();
+            document.getElementById('saveBtn').style.display = "block";
+            btn.innerText = "INVENTORY LOADED";
+            updateTable();
+        } catch (e) {
+            alert("Error: Check if URL is correct and script is deployed.");
+            btn.disabled = false;
+            btn.innerText = "RETRY LOADING";
+        }
+    }
+
+    document.getElementById('scanner').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            const code = this.value.trim();
+            if (code) processScan(code);
+            this.value = '';
+        }
+    });
+
+    function processScan(barcode) {
+        let found = false;
+        for (let item of auditedList) {
+            if (item.branchBarcode === barcode && item.status === "LOSS / MISSING") {
+                item.auditBarcode = barcode;
+                item.status = "MATCHED";
+                found = true;
+                break;
+            }
+        }
+        if (!found) alert("Barcode not found or already matched!");
+        updateTable();
+    }
+
+    function updateTable() {
+        const tbody = document.querySelector('#auditTable tbody');
+        let matched = 0;
+
+        tbody.innerHTML = auditedList.map(item => {
+            const isMatched = item.status === "MATCHED";
+            if (isMatched) matched++;
+            return `
+                <tr class="${isMatched ? 'row-matched' : 'row-loss'}">
+                    <td>${item.branchBarcode}</td>
+                    <td>${item.branchName}</td>
+                    <td>${item.status}</td>
+                </tr>
+            `;
+        }).join('');
+
+        document.getElementById('totalTxt').innerText = auditedList.length;
+        document.getElementById('matchedTxt').innerText = matched;
+        document.getElementById('lossTxt').innerText = auditedList.length - matched;
+    }
+
+    async function submitAudit() {
+        if (!confirm("Finalize and save audit history?")) return;
+        
+        const btn = document.getElementById('saveBtn');
+        btn.innerText = "Saving...";
+        btn.disabled = true;
+
+        try {
+            const resp = await fetch(WEB_APP_URL, {
+                method: "POST",
+                body: JSON.stringify({ action: "saveAudit", items: auditedList })
+            });
+            alert(await resp.text());
+            location.reload();
+        } catch (e) {
+            alert("Save failed. Try again.");
+            btn.disabled = false;
+            btn.innerText = "RETRY SAVE";
+        }
+    }
+</script>
+</body>
+</html>
