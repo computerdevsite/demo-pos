@@ -16,6 +16,18 @@
         
         .top-navbar { padding: 10px 20px; border-bottom: 1px solid #dcdcdc; display: flex; justify-content: space-between; align-items: center; }
         
+        /* Idinagdag na style para sa Back Button */
+        .btn-back { 
+            background: #f1f3f4; 
+            border: 1px solid #ccc; 
+            padding: 5px 15px; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            margin-right: 15px; 
+            font-weight: bold;
+        }
+        .btn-back:hover { background: #e8eaed; }
+
         .control-bar { padding: 10px 20px; background: #f8f9fa; border-bottom: 1px solid var(--gs-border); display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
         
         .search-box, .date-selector { padding: 8px; border: 1px solid #ced4da; border-radius: 4px; font-size: 14px; }
@@ -43,7 +55,11 @@
 <body>
 
     <div class="top-navbar">
-        <strong>SMMG - INVENTORY LOGS</strong>
+        <div style="display: flex; align-items: center;">
+            <!-- Idinagdag na Back Button -->
+            <button class="btn-back" onclick="history.back()">BACK</button>
+            <strong>SMMG - INVENTORY LOGS</strong>
+        </div>
         <div id="status" style="font-size: 12px; color: #0b8043;">● SYSTEM READY</div>
     </div>
 
@@ -138,8 +154,6 @@
                 // 2. Check Date Selector
                 let matchesDate = true;
                 if (dateVal) {
-                    // Kino-convert natin ang timestamp (M/D/YYYY) para magtugma sa HTML Date input (YYYY-MM-DD)
-                    // Note: Ang Apps Script ay karaniwang nagbabalik ng "4/27/2026, 11:55:41 PM"
                     const rowDate = new Date(timeStr);
                     const filterDate = new Date(dateVal);
                     
