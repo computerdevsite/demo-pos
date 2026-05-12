@@ -10,6 +10,19 @@
         input[type="text"], .barcode-input {
             text-transform: none;
         }
+
+         /* WARNING STYLE PARA SA DUPLICATE SI */
+        .duplicate-si {
+            border: 2px solid #ff4d4d !important;
+            background-color: #ffe6e6 !important;
+        }
+        .error-msg {
+            color: #ff4d4d;
+            font-size: 11px;
+            font-weight: bold;
+            display: none;
+            margin-top: 2px;
+        }
     </style>
 </head>
 <body>
@@ -51,8 +64,9 @@
                           placeholder="1001" 
                           maxlength="4" 
                           inputmode="numeric" 
-                          oninput="this.value = this.value.replace(/[^0-9]/g, '');"
+                          oninput="this.value = this.value.replace(/[^0-9]/g, ''); checkDuplicateSI();"
                         >
+                        <div id="si-error" class="error-msg">⚠️ SI ALREADY EXISTS!</div>
                       </div>
                     <div class="form-group"><label>TIN</label><input type="text" id="tin_number" placeholder="000-000-000"></div>
                 </div>
@@ -144,6 +158,7 @@
 
         let inventory = []; 
         let cart = [];
+        let existingTransactions = []; // STORAGE PARA SA DUPLICATE CHECKING
 
         window.onload = function() {
             const dateInput = document.getElementById('si_date');
@@ -172,23 +187,20 @@
                     if(indicator) indicator.innerText = "(" + result.error.toUpperCase() + ")";
                 } else {
                     inventory = result.inventory || []; 
+                    existingTransactions = result.transactions || []; // I-SAVE ANG MGA TRANSAKSYON
                     
-                    // --- GINALAW: MANUAL OVERRIDE PARA SA SI NUMBER (HTML SIDE ONLY) ---
-                    // Imbes na result.nextSI, kukunin natin ang pinakahuli sa result.transactions
                     if (result.transactions && result.transactions.length > 0) {
                         const allTxns = result.transactions;
-                        const lastTxn = allTxns[allTxns.length - 1]; // Kukunin ang pinakahuling record
+                        const lastTxn = allTxns[allTxns.length - 1]; 
                         const lastSI = parseInt(lastTxn.si.replace(/[^\d]/g, ""));
                         
                         const siField = document.getElementById('si_number');
                         if (siField && !isNaN(lastSI)) {
-                            siField.value = (lastSI + 1).toString(); // Dito natin itatama ang 4457 + 1 = 4458
+                            siField.value = (lastSI + 1).toString(); 
                         }
                     } else if (result.nextSI) {
-                        // Fallback kung walang transaction record pa
                         document.getElementById('si_number').value = result.nextSI;
                     }
-                    // ---------------------------------------------------------
                     
                     if(indicator) {
                         indicator.innerText = "(SHEETS LINKED: " + inventory.length + " ITEMS)";
@@ -201,6 +213,32 @@
                     indicator.innerText = "(CONNECTION ERROR)";
                     indicator.style.color = "#e74c3c";
                 }
+            }
+        }
+
+        // FUNCTION PARA I-CHECK KUNG EXISTING NA ANG SI NUMBER
+        function checkDuplicateSI() {
+            const siInput = document.getElementById('si_number');
+            const errorMsg = document.getElementById('si-error');
+            const val = siInput.value.trim();
+
+            if(!val) {
+                siInput.classList.remove('duplicate-si');
+                errorMsg.style.display = 'none';
+                return;
+            }
+
+            const isDuplicate = existingTransactions.some(t => {
+                const existingSI = String(t.si).replace(/[^\d]/g, "");
+                return existingSI === val;
+            });
+
+            if(isDuplicate) {
+                siInput.classList.add('duplicate-si');
+                errorMsg.style.display = 'block';
+            } else {
+                siInput.classList.remove('duplicate-si');
+                errorMsg.style.display = 'none';
             }
         }
 
@@ -347,17 +385,25 @@
         async function processInvoice() {
             const btnSave = document.querySelector('.btn-save');
             const date = document.getElementById('si_date').value;
-            const si = document.getElementById('si_number').value;
+            const siField = document.getElementById('si_number');
+            const si = siField.value;
             const name = document.getElementById('cust_name').value;
             const address = document.getElementById('cust_address').value;
             const tin = document.getElementById('tin_number').value;
             const feeInput = document.getElementById('service_fee_input');
             const cashierInput = document.querySelector('input[name="cashier"]:checked');
             
-            // KUNIN ANG DISCOUNT PARA MAIBABAS SA PRODUCT PRICE
             const discInput = parseFloat(document.getElementById('manual_discount').value) || 0;
             const otherInput = parseFloat(document.getElementById('other_deductions').value) || 0;
             const totalDiscount = discInput + otherInput;
+
+            // FINAL CHECK SA DUPLICATE SI BAGO MAG-SAVE
+            const isDuplicate = existingTransactions.some(t => String(t.si).replace(/[^\d]/g, "") === si);
+            if(isDuplicate) {
+                alert("CANNOT SAVE: SI Number " + si + " na ginamit na sa ibang transaction!");
+                siField.focus();
+                return;
+            }
 
             if (!cashierInput) {
                 alert("PAKI-PILI MUNA ANG PANGALAN NG CASHIER BAGO I-SAVE!");
@@ -375,10 +421,8 @@
                 return;
             }
 
-           // LOGIC: I-DISTRIBUTE ANG DISCOUNT SA PRODUCTS LANG (HINDI KASALI SERVICE FEE)
-           const productItems = cart.filter(item => item.barcode !== "SERVICE");
+            const productItems = cart.filter(item => item.barcode !== "SERVICE");
             const productCount = productItems.length;
-            const discountPerItem = productCount > 0 ? totalDiscount / productCount : 0;
 
             const updatedCart = cart.map(item => {
                 let finalPrice = item.price;
@@ -400,15 +444,13 @@
             btnSave.innerText = "SAVING...";
             btnSave.disabled = true;
 
-            // 1. Gumawa ng kopya ng cart
             let finalItemsForSheets = [...updatedCart];
 
-            // 2. Kung may discount, i-push ito bilang isang "item" sa listahan
             if (totalDiscount > 0) {
                 finalItemsForSheets.push({
                 barcode: "DISCOUNT",
                 name: "TOTAL TRANSACTION DISCOUNT",
-                price: -parseFloat(totalDiscount.toFixed(2)), // Negative value para bumaba ang total
+                price: -parseFloat(totalDiscount.toFixed(2)), 
                 quantity: 1
                 });
             }
