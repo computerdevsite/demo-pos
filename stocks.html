@@ -198,6 +198,7 @@
 
         <div class="stock-wrapper">
             <div class="search-card">
+                
                 <div class="form-group">
                     <label>Search Product</label>
                     <input type="text" id="stockSearch" placeholder="Enter Product Name or Barcode..." oninput="filterStock()">
@@ -212,6 +213,30 @@
                     </select>
                 </div>
                 <button class="btn-refresh" onclick="fetchInventory()">REFRESH DATA</button>
+                <div style="display: flex; justify-content: center; padding: 15px;">
+        <a href="stock_history.html" 
+       style="
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #2c3e50;
+            color: #ffffff;
+            padding: 10px 20px;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            font-size: 14px;
+            font-weight: 600;
+            text-decoration: none;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: -15px;
+       "
+       onmouseover="this.style.backgroundColor='#34495e'; this.style.transform='translateY(-1px)';"
+       onmouseout="this.style.backgroundColor='#2c3e50'; this.style.transform='translateY(0)';"
+    >
+        <span>Link Button Text</span>
+    </a>
+</div>
             </div>
 
             <div class="table-container">
