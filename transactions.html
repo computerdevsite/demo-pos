@@ -5,7 +5,32 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SM MEGAMALL - Transaction Logs</title>
     <link href="css/pos.css" rel="stylesheet">
-    
+    <style>
+        /* Karagdagang style para sa Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        .stat-label {
+            font-size: 0.8rem;
+            color: #666;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+        }
+    </style>
 </head>
 <body>
     <div class="sidebar">
@@ -15,7 +40,7 @@
             <a href="transactions.html" class="menu-item active"><i>📜</i> Transactions</a>
             <a href="delivery.html" class="menu-item"><i>🚚</i> Stock Delivery</a>
             <a href="pullout.html" class="menu-item"><i>📤</i> Stock Pull Out</a>
-			<a href="cashier_approvals.html" class="menu-item"><i>⏳</i> My Pending Stocks</a>
+            <a href="cashier_approvals.html" class="menu-item"><i>⏳</i> My Pending Stocks</a>
             <a href="smmg_approval.html" class="menu-item"><i>🏢</i> Receive Warehouse</a>
             <a href="stocks.html" class="menu-item"><i>📦</i> Check Stocks</a>
             <a href="smmg_stock_management.html" class="menu-item" ><i>📦</i>Summary</a>
@@ -27,6 +52,18 @@
         <div class="top-bar">
             <div style="font-weight: 600; color: var(--primary);">TRANSACTION HISTORY LOGS</div>
             <div id="sync-status" style="font-size: 0.8rem; color: var(--success);">Loading Records...</div>
+        </div>
+
+        <!-- Dashboard Stats Section -->
+        <div class="stats-grid">
+            <div class="stat-card" style="border-left: 5px solid #27ae60;">
+                <div class="stat-label">Daily Sales Total</div>
+                <div id="dailyTotal" class="stat-value" style="color: #27ae60;">₱0.00</div>
+            </div>
+            <div class="stat-card" style="border-left: 5px solid #1a73e8;">
+                <div class="stat-label">Monthly Sales Total</div>
+                <div id="monthlyTotal" class="stat-value" style="color: #1a73e8;">₱0.00</div>
+            </div>
         </div>
 
         <div class="table-container">
@@ -56,12 +93,14 @@
     async function loadTransactions() {
         const status = document.getElementById('sync-status');
         const tbody = document.getElementById('txnBody');
+        const dailyDisplay = document.getElementById('dailyTotal');
+        const monthlyDisplay = document.getElementById('monthlyTotal');
         
         try {
             const response = await fetch(`${SHEETS_URL}?action=getTransactions`);
             let rawData = await response.json();
             
-            rawData.shift(); // Alisin ang header row
+            rawData.shift(); 
             
             tbody.innerHTML = '';
 
@@ -70,16 +109,42 @@
                 return;
             }
 
-            // --- STEP 1: I-GROUP ANG MGA ITEMS BASE SA SI# ---
             const groups = [];
             let currentGroup = null;
 
+            // Counters for Sales
+            let dailySum = 0;
+            let monthlySum = 0;
+
+            const now = new Date();
+            const todayStr = now.toLocaleDateString();
+            const currentMonth = now.getMonth();
+            const currentYear = now.getFullYear();
+
             rawData.forEach(r => {
                 const siInRow = String(r[1] || "").trim();
+                const productSales = parseFloat(r[20]) || 0;
+                const serviceFee = parseFloat(r[21]) || 0;
+                const itemPrice = (productSales + serviceFee).toLocaleString(undefined, {minimumFractionDigits: 2});
 
                 if (siInRow !== "") {
                     if (currentGroup) groups.push(currentGroup);
                     
+                    // Parse Date and Add to Totals
+                    const txnDate = r[0] ? new Date(r[0]) : null;
+                    const txnTotalAmount = parseFloat(r[15]) || 0;
+
+                    if (txnDate && !isNaN(txnDate)) {
+                        // Check if Today
+                        if (txnDate.toLocaleDateString() === todayStr) {
+                            dailySum += txnTotalAmount;
+                        }
+                        // Check if Current Month
+                        if (txnDate.getMonth() === currentMonth && txnDate.getFullYear() === currentYear) {
+                            monthlySum += txnTotalAmount;
+                        }
+                    }
+
                     let cashierName = "---";
                     if (r[5] || r[10]) cashierName = "ARENAS";
                     else if (r[6] || r[11]) cashierName = "TANIELON";
@@ -89,28 +154,33 @@
 
                     currentGroup = {
                         main: {
-                            date: r[0] ? new Date(r[0]).toLocaleDateString() : "---",
+                            date: txnDate ? txnDate.toLocaleDateString() : "---",
                             si: siInRow,
                             tin: r[2] || "---",
                             name: r[3] || "---",
                             address: r[4] || "---",
-                            total: r[15] ? '₱' + parseFloat(r[15]).toLocaleString(undefined, {minimumFractionDigits: 2}) : "₱0.00",
+                            total: '₱' + txnTotalAmount.toLocaleString(undefined, {minimumFractionDigits: 2}),
                             cashier: cashierName,
                             barcode: r[18] || "---",
-                            itemName: r[19] || "---"
+                            itemName: r[19] || "---",
+                            price: '₱' + itemPrice
                         },
                         subItems: []
                     };
                 } else if (currentGroup && (r[18] || r[19])) {
                     currentGroup.subItems.push({
                         barcode: r[18] || "---",
-                        itemName: r[19] || "---"
+                        itemName: r[19] || "---",
+                        price: '₱' + itemPrice
                     });
                 }
             });
             if (currentGroup) groups.push(currentGroup);
 
-            // --- STEP 2: DISPLAY ---
+            // Update Header Stats
+            dailyDisplay.innerText = '₱' + dailySum.toLocaleString(undefined, {minimumFractionDigits: 2});
+            monthlyDisplay.innerText = '₱' + monthlySum.toLocaleString(undefined, {minimumFractionDigits: 2});
+
             let useAltColor = false;
 
             groups.reverse().forEach(group => {
@@ -131,6 +201,7 @@
                     <td><span class="status-badge">${group.main.cashier}</span></td>
                     <td>
                         <div style="font-weight:600;">${group.main.itemName}</div>
+                        <div style="font-size:0.8rem; color:#2c3e50; font-weight:bold;">Price: ${group.main.price}</div>
                         <div style="font-size:0.7rem; color:#888;">Code: ${group.main.barcode}</div>
                     </td>
                 `;
@@ -143,6 +214,7 @@
                         <td colspan="7" style="border:none;"></td> 
                         <td style="border-top: 1px dashed #ddd;">
                             <div style="font-weight:600; color:#555;">${sub.itemName}</div>
+                            <div style="font-size:0.8rem; color:#2c3e50; font-weight:bold;">Price: ${sub.price}</div>
                             <div style="font-size:0.7rem; color:#888;">Code: ${sub.barcode}</div>
                         </td>
                     `;
@@ -157,7 +229,6 @@
         }
     }
 
-    // --- BAGONG SEARCH FUNCTION ---
     function filterTransactions() {
         const input = document.getElementById("txnSearch").value.toUpperCase();
         const tbody = document.getElementById("txnBody");
@@ -167,13 +238,10 @@
         let groupVisible = false;
 
         for (let i = 0; i < rows.length; i++) {
-            // Check kung ito ay simula ng group (may blue border top)
             if (rows[i].style.borderTop && rows[i].style.borderTop.includes("solid")) {
-                // I-apply visibility sa nakaraang group
                 if (currentGroupRows.length > 0) {
                     applyVisibility(currentGroupRows, groupVisible);
                 }
-                // Reset para sa bagong group
                 currentGroupRows = [rows[i]];
                 groupVisible = rows[i].innerText.toUpperCase().includes(input);
             } else {
@@ -183,7 +251,6 @@
                 }
             }
         }
-        // Apply para sa huling group
         if (currentGroupRows.length > 0) {
             applyVisibility(currentGroupRows, groupVisible);
         }
