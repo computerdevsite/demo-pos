@@ -146,7 +146,7 @@
                                 <th>Address</th>
                                 <th>Total Amount</th>
                                 <th>Cashier</th>
-                                <th>Items Ordered</th>
+                                <th>Items Ordered & Price</th>
                             </tr>
                         </thead>
                         <tbody id="txnBody">
@@ -210,6 +210,11 @@
 
                 rawData.forEach(r => {
                     const siInRow = String(r[1] || "").trim();
+                    
+                    // Logic to get individual item price from Column U or V
+                    const itemPrice = r[20] || r[21] || "0";
+                    const formattedItemPrice = '₱' + parseFloat(String(itemPrice).replace(/[₱,]/g, '')).toLocaleString(undefined, {minimumFractionDigits: 2});
+
                     if (siInRow !== "") {
                         if (currentGroup) groups.push(currentGroup);
                         
@@ -220,11 +225,9 @@
                         else if (r[8] || r[13]) cashierName = "BUEMIO";
                         else if (r[9] || r[14]) cashierName = "BROZO";
 
-                        // CLEANUP LOGIC FOR COLUMN P (TOTAL AMOUNT)
                         const rawTotal = String(r[15] || "0").replace(/[₱,]/g, '').trim();
                         const parsedTotal = parseFloat(rawTotal) || 0;
 
-                        // FORMAT DATE TO MM-DD-YYYY
                         let formattedDate = "---";
                         if (r[0]) {
                             const d = new Date(r[0]);
@@ -244,14 +247,16 @@
                                 total: '₱' + parsedTotal.toLocaleString(undefined, {minimumFractionDigits: 2}),
                                 cashier: cashierName,
                                 barcode: r[18] || "---",
-                                itemName: r[19] || "---"
+                                itemName: r[19] || "---",
+                                itemPrice: formattedItemPrice
                             },
                             subItems: []
                         };
                     } else if (currentGroup && (r[18] || r[19] || r[15])) {
                         currentGroup.subItems.push({
                             barcode: r[18] || "---",
-                            itemName: r[19] || "---"
+                            itemName: r[19] || "---",
+                            itemPrice: formattedItemPrice
                         });
                     }
                 });
@@ -276,8 +281,13 @@
                         <td style="font-weight:bold; color: #27ae60;">${group.main.total}</td>
                         <td><span class="status-badge">${group.main.cashier}</span></td>
                         <td class="item-info">
-                            <div style="font-weight:700;">${group.main.itemName}</div>
-                            <div style="font-size:0.65rem; color:#7f8c8d;">SN: ${group.main.barcode}</div>
+                            <div style="display: flex; justify-content: space-between;">
+                                <div>
+                                    <div style="font-weight:700;">${group.main.itemName}</div>
+                                    <div style="font-size:0.65rem; color:#7f8c8d;">SN: ${group.main.barcode}</div>
+                                </div>
+                                <div style="font-weight:bold; color: #34495e; min-width: 70px; text-align: right;">${group.main.itemPrice}</div>
+                            </div>
                         </td>
                     `;
                     tbody.appendChild(mainTr);
@@ -288,8 +298,13 @@
                         subTr.innerHTML = `
                             <td colspan="7" style="border:none;"></td> 
                             <td style="border-top: 1px dashed #eee; padding-top: 5px;">
-                                <div style="font-weight:700; color:#2d3436;">${sub.itemName}</div>
-                                <div style="font-size:0.65rem; color:#7f8c8d;">SN: ${sub.barcode}</div>
+                                <div style="display: flex; justify-content: space-between;">
+                                    <div>
+                                        <div style="font-weight:700; color:#2d3436;">${sub.itemName}</div>
+                                        <div style="font-size:0.65rem; color:#7f8c8d;">SN: ${sub.barcode}</div>
+                                    </div>
+                                    <div style="font-weight:bold; color: #34495e; min-width: 70px; text-align: right;">${sub.itemPrice}</div>
+                                </div>
                             </td>
                         `;
                         tbody.appendChild(subTr);
@@ -299,6 +314,7 @@
                 syncText.innerText = `${branch} LIVE`;
                 dot.style.backgroundColor = "#27ae60";
             } catch (error) {
+                console.error(error);
                 syncText.innerText = "Connection Error";
                 dot.style.backgroundColor = "red";
                 tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:red;">Failed to fetch data.</td></tr>';
@@ -314,8 +330,8 @@
                 return;
             }
 
-            const headers1 = ["DATE", "SI #", "TIN", "CUSTOMER/COMPANY NAME", "CITY ADDRESS", "PRODUCT", "", "", "", "", "SERVICE", "", "", "", "", "GROSS AMOUNT", "NET SALES", "OUTPUT TAX", "BARCODE", "ITEM NAME"];
-            const headers2 = ["", "", "", "", "", "ARENAS", "TANIELON", "KING KING", "BUEMIO", "BROZO", "ARENAS", "TANIELON", "KING KING", "BUEMIO", "BROZO", "", "", "", "", ""];
+            const headers1 = ["DATE", "SI #", "TIN", "CUSTOMER/COMPANY NAME", "CITY ADDRESS", "PRODUCT", "", "", "", "", "SERVICE", "", "", "", "", "GROSS AMOUNT", "NET SALES", "OUTPUT TAX", "BARCODE", "ITEM NAME", "UNIT PRICE"];
+            const headers2 = ["", "", "", "", "", "ARENAS", "TANIELON", "KING KING", "BUEMIO", "BROZO", "ARENAS", "TANIELON", "KING KING", "BUEMIO", "BROZO", "", "", "", "", "", ""];
 
             const excelData = [headers1, headers2];
             let currentMonthMatch = false;
@@ -331,7 +347,8 @@
                         r[1] || "", r[2] || "", r[3] || "", r[4] || "",
                         r[5] || "", r[6] || "", r[7] || "", r[8] || "", r[9] || "",
                         r[10] || "", r[11] || "", r[12] || "", r[13] || "", r[14] || "",
-                        r[15] || "", r[16] || "", r[17] || "", r[18] || "", r[19] || ""
+                        r[15] || "", r[16] || "", r[17] || "", r[18] || "", r[19] || "",
+                        r[20] || r[21] || ""
                     ]);
                 }
             });
