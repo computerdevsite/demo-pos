@@ -171,37 +171,52 @@
         }
 
         function handleBarcodeEntry(event) {
-            if (event.key === "Enter") {
-                event.preventDefault();
-                const barcode = document.getElementById('dr_barcode').value.trim();
-                const name = document.getElementById('dr_name').value.trim();
-                const price = parseFloat(document.getElementById('dr_price').value) || 0;
-                
-                if (!name) {
-                    alert("Pumili muna ng Item Name!");
-                    document.getElementById('dr_name').focus();
-                    return;
-                }
-
-                if (barcode) {
-                    const exists = deliveryBatch.find(i => i.barcode === barcode);
-                    if (exists) {
-                        alert("Barcode na-scan na!");
-                    } else {
-                        deliveryBatch.unshift({ 
-                            name: name, 
-                            barcode: barcode, 
-                            qty: 1, 
-                            price: price,
-                            note: "[STOCK-IN]",
-                            remarks: "DELIVERY" 
-                        });
-                        renderTable();
-                    }
-                    document.getElementById('dr_barcode').value = ""; 
-                }
-            }
+    if (event.key === "Enter") {
+        event.preventDefault();
+        const barcode = document.getElementById('dr_barcode').value.trim();
+        const name = document.getElementById('dr_name').value.trim();
+        const price = parseFloat(document.getElementById('dr_price').value) || 0;
+        
+        if (!name) {
+            alert("Pumili muna ng Item Name!");
+            document.getElementById('dr_name').focus();
+            return;
         }
+
+        if (barcode) {
+            // 1. Check if nasa CURRENT QUEUE na (yung nasa table sa screen)
+            const existsInQueue = deliveryBatch.find(i => i.barcode === barcode);
+            
+            // 2. Check if nasa DATABASE na (yung galing sa Google Sheets)
+            // Assuming your inventoryMaster has a 'barcode' column
+            const existsInInventory = inventoryMaster.find(i => i.barcode === barcode);
+
+            if (existsInQueue) {
+                alert("⚠️ Duplicate: Ang barcode na ito ay nasa listahan na sa baba!");
+                document.getElementById('dr_barcode').value = ""; 
+                return;
+            } 
+            
+            if (existsInInventory) {
+                alert(`❌ ERROR: Ang barcode (${barcode}) ay dati nang naka-record sa system under: ${existsInInventory.name}. Hindi pwede ang multiple entry!`);
+                document.getElementById('dr_barcode').value = ""; 
+                return;
+            }
+
+            // Kung wala sa pareho, proceed sa pag-add
+            deliveryBatch.unshift({ 
+                name: name, 
+                barcode: barcode, 
+                qty: 1, 
+                price: price,
+                note: "[STOCK-IN]",
+                remarks: "DELIVERY" 
+            });
+            renderTable();
+            document.getElementById('dr_barcode').value = ""; 
+        }
+    }
+}
 
         function handleEnter(event, nextId) {
             if (event.key === "Enter") {
