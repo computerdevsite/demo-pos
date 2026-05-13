@@ -66,7 +66,7 @@
                           inputmode="numeric" 
                           oninput="this.value = this.value.replace(/[^0-9]/g, ''); checkDuplicateSI();"
                         >
-                        <div id="si-error" class="error-msg">⚠️ SI ALREADY EXISTS!</div>
+                        <div id="si-error" class="error-msg">⚠️ SI ALREADY EXISTS! (PASSWORD REQUIRED)</div>
                       </div>
                     <div class="form-group"><label>TIN</label><input type="text" id="tin_number" placeholder="000-000-000"></div>
                 </div>
@@ -187,7 +187,7 @@
                     if(indicator) indicator.innerText = "(" + result.error.toUpperCase() + ")";
                 } else {
                     inventory = result.inventory || []; 
-                    existingTransactions = result.transactions || []; // I-SAVE ANG MGA TRANSAKSYON
+                    existingTransactions = result.transactions || []; 
                     
                     if (result.transactions && result.transactions.length > 0) {
                         const allTxns = result.transactions;
@@ -216,7 +216,6 @@
             }
         }
 
-        // FUNCTION PARA I-CHECK KUNG EXISTING NA ANG SI NUMBER
         function checkDuplicateSI() {
             const siInput = document.getElementById('si_number');
             const errorMsg = document.getElementById('si-error');
@@ -397,12 +396,17 @@
             const otherInput = parseFloat(document.getElementById('other_deductions').value) || 0;
             const totalDiscount = discInput + otherInput;
 
-            // FINAL CHECK SA DUPLICATE SI BAGO MAG-SAVE
+            // CHECK KUNG EXISTING ANG SI NUMBER
             const isDuplicate = existingTransactions.some(t => String(t.si).replace(/[^\d]/g, "") === si);
+            
             if(isDuplicate) {
-                alert("CANNOT SAVE: SI Number " + si + " na ginamit na sa ibang transaction!");
-                siField.focus();
-                return;
+                const pass = prompt("WARNING: SI Number " + si + " already exists. Enter Override Password to proceed:");
+                // PALITAN ANG 'ADMIN123' SA GUSTONG PASSWORD
+                if (!pass || pass.toLowerCase() !== "iayc") {
+                    alert("WRONG PASSWORD: Hindi maaring gamitin ang duplicate SI number.");
+                    siField.focus();
+                    return;
+                }
             }
 
             if (!cashierInput) {
