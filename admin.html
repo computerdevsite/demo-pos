@@ -45,6 +45,30 @@
             border-radius: 8px;
             margin-bottom: 20px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            position: relative;
+        }
+
+        .scrollable-chart-wrapper {
+            max-height: 400px;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+        
+        .scrollable-chart-wrapper::-webkit-scrollbar {
+            width: 6px;
+        }
+        .scrollable-chart-wrapper::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+
+        .chart-header-flex {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
         }
         .stats-grid {
             display: grid;
@@ -60,6 +84,64 @@
             font-size: 0.7rem;
             margin-left: 5px;
             display: none;
+        }
+        .product-filter-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .product-filter-group select, .product-filter-group input {
+            padding: 5px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            font-size: 0.85rem;
+        }
+
+        .chart-loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            border-radius: 8px;
+        }
+        .loading-circle {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .data-section {
+            position: relative;
+        }
+
+        /* NEW EDITABLE COST STYLES */
+        .editable-cost-input {
+            width: 85px;
+            padding: 5px;
+            border: 1px solid #3498db;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            color: #2c3e50;
+            text-align: right;
+            background-color: #f8f9fa;
+        }
+        .editable-cost-input:focus {
+            background-color: #ffffff;
+            outline: 2px solid #2980b9;
         }
     </style>
 </head>
@@ -126,29 +208,71 @@
                 <h2 style="margin:0 0 15px 0; font-size: 1rem; color: #2c3e50;">Daily Sales Trend (Last 7 Days)</h2>
                 <canvas id="salesChart" height="100"></canvas>
             </div>
+
+            <div class="chart-container">
+                <div class="chart-loading-overlay" id="product-chart-loading">
+                    <div class="loading-circle"></div>
+                </div>
+
+                <div class="chart-header-flex">
+                    <h2 style="margin:0; font-size: 1rem; color: #2c3e50;">Top 15 Most Purchased Products (by Quantity)</h2>
+                    <div class="product-filter-group">
+                        <select id="product-date-type" onchange="toggleProductDateInput()">
+                            <option value="all" selected>All-Time</option>
+                            <option value="daily">Specific Day</option>
+                            <option value="monthly">Specific Month</option>
+                        </select>
+                        <input type="date" id="product-date-day" style="display:none;" onchange="fetchAndRenderTopProducts()">
+                        <input type="month" id="product-date-month" style="display:none;" onchange="fetchAndRenderTopProducts()">
+                    </div>
+                </div>
+                
+                <div class="scrollable-chart-wrapper">
+                    <div style="height: 600px; position: relative; width: 100%;">
+                        <canvas id="topProductsChart"></canvas>
+                    </div>
+                </div>
+            </div>
             
-            <div class="controls-card">
-                <input type="text" id="searchInput" class="search-box" placeholder="Search transaction ID or customer name..." oninput="filterTable()">
+            <div class="controls-card" style="display: flex; gap: 15px; align-items: center; justify-content: space-between; flex-wrap: wrap;">
+                <input type="text" id="searchInput" class="search-box" style="flex: 1; min-width: 200px;" placeholder="Search item name..." oninput="filterTable()">
+                
+                <div class="product-filter-group" style="margin-top: 0;">
+                    <span style="font-weight: bold; font-size: 0.85rem; color: #2c3e50;">Table Scope:</span>
+                    <select id="table-date-type" onchange="toggleTableDateInput()">
+                        <option value="all" selected>All-Time Records</option>
+                        <option value="daily">Specific Day</option>
+                        <option value="monthly">Specific Month</option>
+                    </select>
+                    <input type="date" id="table-date-day" style="display:none;" onchange="fetchAndRenderTopProducts()">
+                    <input type="month" id="table-date-month" style="display:none;" onchange="fetchAndRenderTopProducts()">
+                </div>
             </div>
 
             <div class="data-section">
+                <div class="chart-loading-overlay" id="table-chart-loading">
+                    <div class="loading-circle"></div>
+                </div>
+
                 <div class="section-header">
-                    <h2 id="table-title" style="margin:0; font-size: 1.2rem;">Recent Sales: SM MEGAMALL</h2>
+                    <h2 id="table-title" style="margin:0; font-size: 1.2rem;">Top 20 Most Purchased Items</h2>
                     <button class="btn-add" onclick="openSheet()" style="display: none;">Open Google Sheets</button>
                 </div>
                 
                 <table>
                     <thead>
                         <tr>
-                            <th>Date</th>
-                            <th>SI Number</th>
-                            <th>Customer Name</th>
-                            <th>Total Amount</th>
+                            <th>ITEM NAME</th>
+                            <th>PRICE</th>
+                            <th style="width: 120px;">COST (EDITABLE)</th>
+                            <th>TOTAL AMOUNT</th>
+                            <th>TOTAL COST</th>
+                            <th>TOTAL PROFIT</th>
                         </tr>
                     </thead>
                     <tbody id="inventory-table-body">
                         <tr>
-                            <td colspan="4" style="text-align:center; padding: 50px; color: #888;">Loading transaction data...</td>
+                            <td colspan="6" style="text-align:center; padding: 50px; color: #888;">Loading item performance data...</td>
                         </tr>
                     </tbody>
                 </table>
@@ -175,9 +299,28 @@
     
     let allInventoryData = []; 
     let allTransactionData = []; 
+    let top20ProcessedItems = []; 
     let salesChart;
+    let topProductsChart;
 
-    // Helper to format date consistently for comparison
+    // Kukunin ang mga dating permanenteng sinave na manual costs mula sa localStorage base sa kasalukuyang branch
+    function getManualCostDatabase() {
+        const branch = document.getElementById('branch-selector').value;
+        const key = `manual_costs_${branch}`;
+        const savedData = localStorage.getItem(key);
+        return savedData ? JSON.parse(savedData) : {};
+    }
+
+    // Isasave ang manual cost nang permanente sa localStorage ng browser
+    function saveManualCostToDatabase(itemName, costValue) {
+        const branch = document.getElementById('branch-selector').value;
+        const key = `manual_costs_${branch}`;
+        const currentDb = getManualCostDatabase();
+        
+        currentDb[itemName] = costValue;
+        localStorage.setItem(key, JSON.stringify(currentDb));
+    }
+
     function getFormatDate(dateObj) {
         if (!dateObj || isNaN(dateObj.getTime())) return null;
         const y = dateObj.getFullYear();
@@ -186,17 +329,51 @@
         return `${y}-${m}-${d}`;
     }
 
-    // Helper to clean and parse amounts
     function parseAmount(val) {
         if (!val) return 0;
         const cleaned = String(val).replace(/[₱,]/g, '').trim();
         return parseFloat(cleaned) || 0;
     }
 
+    function toggleProductDateInput() {
+        const type = document.getElementById('product-date-type').value;
+        const dayInput = document.getElementById('product-date-day');
+        const monthInput = document.getElementById('product-date-month');
+
+        if (type === 'all') {
+            dayInput.style.display = 'none';
+            monthInput.style.display = 'none';
+        } else if (type === 'daily') {
+            dayInput.style.display = 'inline-block';
+            monthInput.style.display = 'none';
+        } else if (type === 'monthly') {
+            dayInput.style.display = 'none';
+            monthInput.style.display = 'inline-block';
+        }
+        fetchAndRenderTopProducts();
+    }
+
+    function toggleTableDateInput() {
+        const type = document.getElementById('table-date-type').value;
+        const dayInput = document.getElementById('table-date-day');
+        const monthInput = document.getElementById('table-date-month');
+
+        if (type === 'all') {
+            dayInput.style.display = 'none';
+            monthInput.style.display = 'none';
+        } else if (type === 'daily') {
+            dayInput.style.display = 'inline-block';
+            monthInput.style.display = 'none';
+        } else if (type === 'monthly') {
+            dayInput.style.display = 'none';
+            monthInput.style.display = 'inline-block';
+        }
+        fetchAndRenderTopProducts();
+    }
+
     function changeBranch() {
         const selectedBranch = document.getElementById('branch-selector').value;
-        document.getElementById('table-title').innerText = `Recent Sales: SM ${selectedBranch.replace('_', ' ')}`;
-        document.getElementById('inventory-table-body').innerHTML = `<tr><td colspan="4" style="text-align:center; padding: 50px; color: #888;">Loading ${selectedBranch} data...</td></tr>`;
+        document.getElementById('inventory-table-body').innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 50px; color: #888;">Loading ${selectedBranch} data...</td></tr>`;
         fetchInventory(); 
     }
 
@@ -219,7 +396,6 @@
             allInventoryData = data.inventory || data;
             allTransactionData = (data.transactions || []).reverse(); 
             
-            renderTable(allTransactionData);
             updateStats(allInventoryData, allTransactionData);
             updateChart(allTransactionData);
             
@@ -237,8 +413,15 @@
         const year = now.getFullYear();
         const month = String(now.getMonth() + 1).padStart(2, '0');
         const day = String(now.getDate()).padStart(2, '0');
+        
         document.getElementById('date-selector').value = `${year}-${month}-${day}`;
         document.getElementById('month-selector').value = `${year}-${month}`;
+        
+        document.getElementById('product-date-day').value = `${year}-${month}-${day}`;
+        document.getElementById('product-date-month').value = `${year}-${month}`;
+
+        document.getElementById('table-date-day').value = `${year}-${month}-${day}`;
+        document.getElementById('table-date-month').value = `${year}-${month}`;
     }
 
     async function checkPendingCount() {
@@ -261,24 +444,58 @@
         const tableBody = document.getElementById('inventory-table-body');
         let html = "";
         if (!items || items.length === 0) {
-            tableBody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding: 20px;">No matching transactions found.</td></tr>`;
+            tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 20px;">No matching item data found.</td></tr>`;
             return;
         }
-        items.slice(0, 50).forEach(item => {
-            const dateObj = new Date(item.date);
-            const formattedDate = dateObj.toLocaleDateString('en-US', {
-                year: 'numeric', month: '2-digit', day: '2-digit'
-            });
-            const amount = parseAmount(item.total);
-
+        items.forEach((item, index) => {
             html += `<tr>
-                <td>${formattedDate}</td>
-                <td style="font-family:monospace; font-weight:bold;">${item.si || '---'}</td>
-                <td>${item.name || '---'}</td>
-                <td style="font-weight:bold; color: #3498db;">₱${amount.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                <td style="font-weight:bold; color: #2c3e50;">${item.name} <span style="font-size:0.75rem; color:#7f8c8d; font-weight:normal;">(Qty: ${item.qty})</span></td>
+                <td>₱${item.unitPrice.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                <td>
+                    ₱<input type="number" 
+                            class="editable-cost-input" 
+                            value="${item.unitCost}" 
+                            step="0.01" 
+                            min="0" 
+                            oninput="handleCostLiveUpdate(this, ${index})">
+                </td>
+                <td>₱${item.totalAmount.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                <td id="total-cost-field-${index}">₱${item.totalCost.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                <td id="total-profit-field-${index}" style="font-weight:bold; color: ${item.totalProfit >= 0 ? '#2ecc71' : '#e74c3c'};">
+                    ₱${item.totalProfit.toLocaleString(undefined, {minimumFractionDigits: 2})}
+                </td>
             </tr>`;
         });
         tableBody.innerHTML = html;
+    }
+
+    // LIVE RE-COMPUTATION AND LOCAL STORAGE WRITE PER TRANSACTION/ROW
+    function handleCostLiveUpdate(inputElement, itemIndex) {
+        const newCost = parseFloat(inputElement.value) || 0;
+        const item = top20ProcessedItems[itemIndex];
+
+        if (!item) return;
+
+        item.unitCost = newCost;
+        
+        // Isasave sa browser database para hindi mawala kapag ni-refresh ang tab/bintana
+        saveManualCostToDatabase(item.name, newCost);
+
+        // Muling kuwentahin ang math para sa row na ito
+        item.totalCost = item.qty * newCost;
+        item.totalProfit = item.totalAmount - item.totalCost;
+
+        // I-update ang text elements nang direkta sa DOM para walang flashing ng UI
+        const totalCostCell = document.getElementById(`total-cost-field-${itemIndex}`);
+        const totalProfitCell = document.getElementById(`total-profit-field-${itemIndex}`);
+
+        if (totalCostCell) {
+            totalCostCell.innerText = `₱${item.totalCost.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+        }
+        if (totalProfitCell) {
+            totalProfitCell.innerText = `₱${item.totalProfit.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+            totalProfitCell.style.color = item.totalProfit >= 0 ? '#2ecc71' : '#e74c3c';
+        }
     }
 
     function updateStats(invItems, transItems) {
@@ -349,14 +566,222 @@
                 }
             }
         });
+
+        fetchAndRenderTopProducts();
+    }
+
+    // SMART SMART FUZZY-KEYWORD MATCHING MECHANICS
+    function cleanItemNameForMatching(name) {
+        if (!name) return "";
+        let cleaned = String(name).toLowerCase();
+        
+        // 1. Alisin ang mga salitang pabago-bago ang lagay sa magkabilang tables
+        cleaned = cleaned.replace(/premium/g, '');
+        cleaned = cleaned.replace(/dye/g, '');
+        cleaned = cleaned.replace(/ink/g, '');
+        
+        // 2. Gawing generic ang brand prefix codes (slb, slc, sle -> sl) para mag-match sila
+        cleaned = cleaned.replace(/^slb|^slc|^sle/, 'sl');
+        
+        // 3. Alisin ang lahat ng klase ng spaces at non-alphanumeric para magkadikit ang mga numero at kulay
+        cleaned = cleaned.replace(/[^a-z0-9]/g, '');
+        
+        return cleaned;
+    }
+
+    async function fetchAndRenderTopProducts() {
+        const branch = document.getElementById('branch-selector').value;
+        const apiURL = BRANCH_CONFIG[branch].url;
+        
+        const ctxTop = document.getElementById('topProductsChart').getContext('2d');
+        
+        const loadingOverlay = document.getElementById('product-chart-loading');
+        const tableLoadingOverlay = document.getElementById('table-chart-loading');
+        
+        loadingOverlay.style.display = 'flex';
+        tableLoadingOverlay.style.display = 'flex';
+
+        const filterType = document.getElementById('product-date-type').value;
+        const targetDay = document.getElementById('product-date-day').value;
+        const targetMonth = document.getElementById('product-date-month').value;
+
+        const tableFilterType = document.getElementById('table-date-type').value;
+        const tableTargetDay = document.getElementById('table-date-day').value;
+        const tableTargetMonth = document.getElementById('table-date-month').value;
+
+        try {
+            const warehouseCostMap = {};
+            if (allInventoryData && allInventoryData.length > 0) {
+                allInventoryData.forEach(invItem => {
+                    const invName = invItem.name || invItem[1]; 
+                    const invCost = invItem.cost !== undefined ? parseAmount(invItem.cost) : parseAmount(invItem[4]); 
+                    
+                    if (invName) {
+                        const lookupKey = cleanItemNameForMatching(invName);
+                        warehouseCostMap[lookupKey] = invCost;
+                    }
+                });
+            }
+
+            const response = await fetch(`${apiURL}?action=getTransactions`);
+            const rawMatrix = await response.json();
+            
+            if (!rawMatrix || rawMatrix.length <= 1) throw new Error("No items");
+
+            const productDataMap = {};
+            const tableDataMap = {};
+
+            for (let i = 1; i < rawMatrix.length; i++) {
+                const row = rawMatrix[i];
+                const rowDateObj = new Date(row[0]);
+                const rowDateStr = getFormatDate(rowDateObj);
+                if (!rowDateStr) continue;
+
+                const itemName = row[19] ? String(row[19]).trim() : "";
+                const productSalesAmount = parseAmount(row[20]);
+                const serviceFeeAmount = parseAmount(row[21]);
+                const itemRowRevenue = productSalesAmount > 0 ? productSalesAmount : serviceFeeAmount;
+
+                if (!itemName) continue;
+                
+                const lowerName = itemName.toLowerCase();
+                if (lowerName.includes("discount") || lowerName.includes("additional") || lowerName === "---") {
+                    continue;
+                }
+
+                const cleanKey = cleanItemNameForMatching(itemName);
+                const computedCostFromWarehouse = warehouseCostMap[cleanKey] || 0;
+
+                // A. GRAPH LOGIC
+                let passGraph = true;
+                if (filterType === 'daily' && rowDateStr !== targetDay) passGraph = false;
+                if (filterType === 'monthly' && rowDateStr.substring(0, 7) !== targetMonth) passGraph = false;
+
+                if (passGraph) {
+                    if (!productDataMap[itemName]) {
+                        productDataMap[itemName] = { quantity: 0, totalRevenue: 0 };
+                    }
+                    productDataMap[itemName].quantity += 1;
+                    productDataMap[itemName].totalRevenue += itemRowRevenue;
+                }
+
+                // B. TABLE LOGIC
+                let passTable = true;
+                if (tableFilterType === 'daily' && rowDateStr !== tableTargetDay) passTable = false;
+                if (tableFilterType === 'monthly' && rowDateStr.substring(0, 7) !== tableTargetMonth) passTable = false;
+
+                if (passTable) {
+                    if (!tableDataMap[itemName]) {
+                        tableDataMap[itemName] = { 
+                            quantity: 0, 
+                            totalRevenue: 0, 
+                            latestUnitPrice: itemRowRevenue, 
+                            warehouseUnitCost: computedCostFromWarehouse 
+                        };
+                    } else {
+                        tableDataMap[itemName].latestUnitPrice = itemRowRevenue;
+                        if (computedCostFromWarehouse > 0) {
+                            tableDataMap[itemName].warehouseUnitCost = computedCostFromWarehouse;
+                        }
+                    }
+                    tableDataMap[itemName].quantity += 1;
+                    tableDataMap[itemName].totalRevenue += itemRowRevenue;
+                }
+            }
+
+            const graphSortedByQty = Object.entries(productDataMap).sort((a, b) => b[1].quantity - a[1].quantity);
+            const tableSortedByQty = Object.entries(tableDataMap).sort((a, b) => b[1].quantity - a[1].quantity);
+
+            const top15Products = graphSortedByQty.slice(0, 15);
+            const labels = top15Products.map(item => item[0]);
+            const quantities = top15Products.map(item => item[1].quantity);
+            const revenues = top15Products.map(item => item[1].totalRevenue);
+
+            if (topProductsChart) topProductsChart.destroy();
+
+            topProductsChart = new Chart(ctxTop, {
+                type: 'bar',
+                data: {
+                    labels: labels.length > 0 ? labels : ["No Sales Data For This Period"],
+                    datasets: [{
+                        label: 'Times Purchased (Qty)',
+                        data: quantities.length > 0 ? quantities : [0],
+                        backgroundColor: 'rgba(52, 152, 219, 0.7)',
+                        borderColor: 'rgba(52, 152, 219, 1)',
+                        borderWidth: 1,
+                        borderRadius: 4,
+                        metadata: revenues
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const qty = context.raw;
+                                    const metaRevenue = context.dataset.metadata[context.dataIndex] || 0;
+                                    return [
+                                        `Quantity: ${qty} pcs`,
+                                        `Total Sales: ₱${metaRevenue.toLocaleString(undefined, {minimumFractionDigits: 2})}`
+                                    ];
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { 
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) { if (value % 1 === 0) { return value + ' pcs'; } }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Basahin ang active manual cost database mula sa localStorage
+            const localManualCosts = getManualCostDatabase();
+
+            top20ProcessedItems = tableSortedByQty.slice(0, 20).map(item => {
+                const name = item[0];
+                const qty = item[1].quantity;
+                const unitPrice = item[1].latestUnitPrice;
+                
+                // HIERARCHY: LocalStorage Setup > Fallback to Sheets Match Mapping
+                const unitCost = localManualCosts[name] !== undefined ? localManualCosts[name] : item[1].warehouseUnitCost; 
+
+                const totalAmount = item[1].totalRevenue; 
+                const totalCost = qty * unitCost; 
+                const totalProfit = totalAmount - totalCost;
+
+                return {
+                    name: name,
+                    qty: qty,
+                    unitPrice: unitPrice,
+                    unitCost: unitCost,
+                    totalAmount: totalAmount,
+                    totalCost: totalCost,
+                    totalProfit: totalProfit
+                };
+            });
+
+            renderTable(top20ProcessedItems);
+
+        } catch (error) {
+            console.log("Failed to process data elements: ", error);
+        } finally {
+            loadingOverlay.style.display = 'none';
+            tableLoadingOverlay.style.display = 'none';
+        }
     }
 
     function filterTable() {
         const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-        const filteredData = allTransactionData.filter(item => {
-            const name = (item.name || "").toLowerCase();
-            const si = (item.si || "").toLowerCase();
-            return name.includes(searchTerm) || si.includes(searchTerm);
+        const filteredData = top20ProcessedItems.filter(item => {
+            return item.name.toLowerCase().includes(searchTerm);
         });
         renderTable(filteredData);
     }
