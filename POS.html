@@ -23,6 +23,17 @@
             display: none;
             margin-top: 2px;
         }
+
+        .sidebar-menu-badge {
+    background-color: #e74c3c;
+    color: white;
+    font-size: 0.7rem;
+    font-weight: bold;
+    padding: 2px 7px;
+    border-radius: 10px;
+    margin-left: 8px;
+    display: none; /* Nakatago muna habang walang pending */
+}
     </style>
 </head>
 <body>
@@ -35,7 +46,9 @@
             <a href="delivery.html" class="menu-item" target="_blank"><i>🚚</i> STOCK DELIVERY</a>
             <a href="pullout.html" class="menu-item" target="_blank"><i>📤</i> STOCK PULL OUT</a>
             <a href="cashier_approvals.html" class="menu-item" target="_blank"><i>⏳</i> MY PENDING STOCKS</a>
-            <a href="smmg_approval.html" class="menu-item" target="_blank"><i>🏢</i> Receive Warehouse</a>
+            <a href="smmg_approval.html" class="menu-item">
+                <i>🏢</i> RECIEVE WAREHOUSE <span id="global-pending-badge" class="sidebar-menu-badge"></span>
+            </a>
             <a href="stocks.html" class="menu-item" target="_blank"><i>📦</i> CHECK STOCKS</a>
             <a href="smmg_stock_management.html" class="menu-item" target="_blank"><i>📦</i>SUMMARY</a>
             <a href="index.html" class="menu-item" style="margin-top: auto;"><i>🚪</i> LOGOUT</a>
@@ -500,6 +513,46 @@
                 btnSave.disabled = false;
             }
         }
+
+        // ==========================================================================
+// BACKGROUND AUTOMATIC NOTIFICATION BADGE (SELF-CONTAINED - PASTE & FORGET)
+// ==========================================================================
+(function() {
+    async function checkWarehouseDeliveriesCount() {
+        const badge = document.getElementById('global-pending-badge');
+        if (!badge) return; // Kung walang badge sa page, safe na hihinto ang script
+
+        const WAREHOUSE_BADGE_URL = "https://script.google.com/macros/s/AKfycbyAFoBQbe9NMq2IYVjqtCzQ3NJTsUEGDlb1uHQ1q483YNRInhI78aXPNWTLzn9oR6EmLQ/exec";
+
+        try {
+            const response = await fetch(`${WAREHOUSE_BADGE_URL}?action=getAdminData&branch=SM MEGAMALL&t=${new Date().getTime()}`);
+            if (!response.ok) return;
+            
+            const data = await response.json();
+            
+            const pendingCount = data.approvals ? data.approvals.filter(item => {
+                const status = String(item.status).trim().toUpperCase();
+                const store = String(item.store).trim().toUpperCase();
+                return status === "PENDING" && (store === "SM MEGAMALL" || store === "SMMG");
+            }).length : 0;
+            
+            if (pendingCount > 0) {
+                badge.innerText = pendingCount;
+                badge.style.display = 'inline-block';
+            } else {
+                badge.style.display = 'none';
+            }
+        } catch (error) {
+            console.error("Badge sync error:", error);
+        }
+    }
+
+    // Gagamit ng modernong event listener para hindi nito ma-overwrite ang iyong "window.onload" sa itaas
+    window.addEventListener('load', function() {
+        checkWarehouseDeliveriesCount();
+        setInterval(checkWarehouseDeliveriesCount, 30000); // 30 seconds auto-refresh
+    });
+})();
     </script>
 </body>
 </html>
