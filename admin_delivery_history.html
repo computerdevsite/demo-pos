@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Delivery History</title>
+    <link href="css/admin.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        .transaction-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            margin-top: 10px;
+        }
+
+        table thead th {
+            background-color: #2c3e50 !important;
+            color: white !important;
+            padding: 14px;
+            text-transform: uppercase;
+            font-size: 0.7rem;
+            letter-spacing: 0.5px;
+            text-align: left;
+        }
+
+        /* 🎨 MGA KULAY NG BRANCH BADGES */
+        .badge-branch {
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 0.75rem;
+            display: inline-block;
+            text-align: center;
+        }
+
+        /* Kulay para sa SM MEGAMALL / SMMG (Light Blue theme) */
+        .branch-megamall {
+            background: #e1f5fe;
+            color: #0288d1;
+            border: 1px solid #b3e5fc;
+        }
+
+        /* Kulay para sa SM NORTH EDSA / SMNE (Purple theme) */
+        .branch-north-edsa {
+            background: #f3e5f5;
+            color: #7b1fa2;
+            border: 1px solid #e1bee7;
+        }
+
+        /* Default background kung sakaling walang katugma */
+        .branch-default {
+            background: #f5f5f5;
+            color: #616161;
+            border: 1px solid #e0e0e0;
+        }
+
+        .badge-status {
+            padding: 5px 10px;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 0.7rem;
+            display: inline-block;
+        }
+
+        .status-received {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .status-pending {
+            background: #fff3e0;
+            color: #e65100;
+        }
+
+        .item-info { line-height: 1.4; }
+
+        .btn-export {
+            background-color: #27ae60;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .btn-export:hover { background-color: #219150; }
+
+        .status-dot {
+            height: 10px;
+            width: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 5px;
+            background-color: #27ae60;
+        }
+        
+        .item-row {
+            display: flex;
+            justify-content: space-between;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <div class="sidebar-brand">ADMIN PANEL</div>
+        <div class="sidebar-menu">
+            <a href="admin.html" class="menu-link "><i>📊</i> Dashboard</a>
+            <a href="admin_delivery.html" class="menu-link"><i>📥</i> Warehouse Direct Entry</a>
+            <a href="admin_delivery_history.html" class="menu-link active"><i>🚚</i> Delivery History</a>
+            <a href="admin_pullout.html" class="menu-link"><i>📤</i>Pull Out</a>
+            <a href="pending.html" class="menu-link">
+                <i>✅</i> Pending Approvals <span class="sidebar-badge" id="main-pending-badge"></span>
+            </a>
+            <a href="smmg_transactions.html" class="menu-link"><i>💸</i> Transactions</a>
+            <a href="admin_stocks.html" class="menu-link"><i>📦</i> Global Inventory</a>
+            <a href="transfer.html" class="menu-link"><i>🔄</i> Stock Transfer</a>
+            <a href="stock_management.html" class="menu-link"><i>📦</i> Stock Management</a>
+            <a href="index.html" class="menu-link" style="margin-top: auto; color: #ff5e57;"><i>🚪</i> Logout</a>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="top-nav">
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <h3 style="color: var(--text-dark); margin: 0;">Warehouse Delivery History</h3>
+                <span id="sync-status" style="font-size: 0.8rem; font-weight: bold;">
+                    <span class="status-dot" id="sync-dot"></span> <span id="sync-text">Connected Live</span>
+                </span>
+            </div>
+            <div class="admin-profile">
+                <span class="badge-admin" style="background: #2c3e50;">Audit Mode Enabled</span>
+            </div>
+        </div>
+
+        <div class="content-padding">
+            <div class="transaction-card">
+                <div class="section-header" style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                    <input type="text" id="deliverySearch" class="search-box" style="width: 100%; max-width: 400px; padding: 12px; border: 1px solid #dfe6e9; border-radius: 8px;" placeholder="Search item, barcode, branch, status..." onkeyup="filterDeliveries()">
+                    <button class="btn-export" onclick="exportToExcel()" style="display: none;">📥 Export Excel</button>
+                </div>
+
+                <div class="data-section" style="box-shadow: none; padding: 0; overflow-x: auto;">
+                    <table id="deliveryTable">
+                        <thead>
+                            <tr>
+                                <th>Date & Time Received</th>
+                                <th>Branch / Store</th>
+                                <th>Description / Memo</th>
+                                <th>Total Qty</th>
+                                <th>Status</th>
+                                <th>Items Delivered & Quantity</th>
+                            </tr>
+                        </thead>
+                        <tbody id="deliveryBody">
+                            <tr><td colspan="6" style="text-align:center; padding: 50px;">🔄 Reading warehouse database history...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 🔴 IPALIT DITO ANG IYONG DEPLOYED WEB APP URL GALING APPS SCRIPT
+        const CENTRAL_SHEETS_URL = "https://script.google.com/macros/s/AKfycbyAFoBQbe9NMq2IYVjqtCzQ3NJTsUEGDlb1uHQ1q483YNRInhI78aXPNWTLzn9oR6EmLQ/exec";
+        
+        let cachedDeliveryRows = [];
+
+        // Helper function para gawing MM-DD-YYYY || HH:MM ang format ng date
+        function formatDateTime(dateString) {
+            if (!dateString) return "N/A";
+            const d = new Date(dateString);
+            
+            if (isNaN(d.getTime())) return dateString; 
+
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            const year = d.getFullYear();
+            
+            const hours = String(d.getHours()).padStart(2, '0');
+            const minutes = String(d.getMinutes()).padStart(2, '0');
+
+            return `${month}-${day}-${year} || ${hours}:${minutes}`;
+        }
+
+        async function fetchInitialData() {
+            const syncText = document.getElementById('sync-text');
+            const dot = document.getElementById('sync-dot');
+            const tbody = document.getElementById('deliveryBody');
+            
+            try {
+                const response = await fetch(`${CENTRAL_SHEETS_URL}?action=getDeliveryHistory`);
+                const data = await response.json();
+                
+                if (!data.history || data.history.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 30px;">No historical delivery rows found inside the sheet.</td></tr>';
+                    syncText.innerText = "Database Empty";
+                    dot.style.backgroundColor = "#7f8c8d";
+                    return;
+                }
+
+                cachedDeliveryRows = data.history;
+                renderTableData();
+
+            } catch (error) {
+                console.error("Error loading data: ", error);
+                syncText.innerText = "Connection Error";
+                dot.style.backgroundColor = "red";
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:red; padding:30px;">Failed to connect to Apps Script. Ensure you deployed the script as "Anyone" and pasted the correct URL.</td></tr>';
+            }
+        }
+
+        function renderTableData() {
+            const syncText = document.getElementById('sync-text');
+            const dot = document.getElementById('sync-dot');
+            const tbody = document.getElementById('deliveryBody');
+
+            const groups = {};
+
+            cachedDeliveryRows.forEach(item => {
+                const groupKey = `${item.timestamp}_${item.store}`;
+
+                if (!groups[groupKey]) {
+                    let cleanStore = item.store;
+                    if (item.store === "SMMG" || item.store === "SM MEGAMALL") cleanStore = "SM MEGAMALL";
+                    if (item.store === "SMNE" || item.store === "SM NORTH EDSA") cleanStore = "SM NORTH EDSA";
+
+                    groups[groupKey] = {
+                        date: item.timestamp,
+                        branch: cleanStore,
+                        description: item.description,
+                        status: item.status,
+                        totalQtyCount: 0,
+                        items: []
+                    };
+                }
+
+                groups[groupKey].totalQtyCount += parseInt(item.qty || 0);
+                groups[groupKey].items.push({
+                    barcode: item.barcode,
+                    itemName: item.name,
+                    qty: item.qty
+                });
+            });
+
+            tbody.innerHTML = '';
+            let useAltColor = false;
+            
+            // Pinakabagong petsa ang mauuna pababa (Newest to Oldest)
+            const sortedGroups = Object.values(groups).sort((a, b) => {
+                return new Date(b.date) - new Date(a.date);
+            });
+
+            sortedGroups.forEach(group => {
+                useAltColor = !useAltColor;
+                const groupBg = useAltColor ? "#fdfdfd" : "#ffffff";
+                
+                const firstItem = group.items[0];
+                const mainTr = document.createElement('tr');
+                mainTr.style.backgroundColor = groupBg;
+                mainTr.style.borderTop = "2px solid #bdc3c7"; 
+                
+                const badgeStyle = group.status === "RECEIVED" ? "badge-status status-received" : "badge-status status-pending";
+                
+                // 🔄 LOGIC KUNG ANONG COLOR CLASS ANG GAGAMITIN BASE SA BRANCH NAME
+                let branchColorClass = "branch-default";
+                if (group.branch === "SM MEGAMALL") {
+                    branchColorClass = "branch-megamall";
+                } else if (group.branch === "SM NORTH EDSA") {
+                    branchColorClass = "branch-north-edsa";
+                }
+                
+                mainTr.innerHTML = `
+                    <td style="font-weight:600; color:#555; white-space: nowrap;">${formatDateTime(group.date)}</td>
+                    <td><span class="badge-branch ${branchColorClass}">${group.branch}</span></td>
+                    <td style="font-weight:bold; color:#16a085;">${group.description}</td>
+                    <td style="font-weight:bold; color:#2c3e50;">${group.totalQtyCount} pcs <span style="font-size:0.75rem; font-weight:normal; color:#7f8c8d;">(${group.items.length} SKU)</span></td>
+                    <td><span class="${badgeStyle}">${group.status}</span></td>
+                    <td class="item-info">
+                        <div class="item-row">
+                            <div>
+                                <div style="font-weight:700;">${firstItem.itemName}</div>
+                                <div style="font-size:0.65rem; color:#7f8c8d;">BARCODE: ${firstItem.barcode}</div>
+                            </div>
+                            <div style="font-weight:bold; color: #27ae60; min-width: 50px; text-align: right;">x${firstItem.qty}</div>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(mainTr);
+
+                for (let i = 1; i < group.items.length; i++) {
+                    const sub = group.items[i];
+                    const subTr = document.createElement('tr');
+                    subTr.style.backgroundColor = groupBg;
+                    subTr.innerHTML = `
+                        <td colspan="5" style="border:none;"></td> 
+                        <td style="border-top: 1px dashed #eee; padding-top: 5px;">
+                            <div class="item-row">
+                                <div>
+                                    <div style="font-weight:700; color:#2d3436;">${sub.itemName}</div>
+                                    <div style="font-size:0.65rem; color:#7f8c8d;">BARCODE: ${sub.barcode}</div>
+                                </div>
+                                <div style="font-weight:bold; color: #27ae60; min-width: 50px; text-align: right;">x${sub.qty}</div>
+                            </div>
+                        </td>
+                    `;
+                    tbody.appendChild(subTr);
+                }
+            });
+
+            syncText.innerText = "All History Loaded Logs";
+            dot.style.backgroundColor = "#27ae60";
+        }
+
+        function exportToExcel() {
+            if (cachedDeliveryRows.length === 0) return;
+            const headers = ["BARCODE", "ITEM NAME", "STORE TARGET", "TIMESTAMP", "STATUS", "LOG MEMO", "QTY"];
+            const excelData = [headers];
+
+            const sortedExcelRows = [...cachedDeliveryRows].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+            sortedExcelRows.forEach(item => {
+                excelData.push([item.barcode, item.name, item.store, formatDateTime(item.timestamp), item.status, item.description, item.qty]);
+            });
+
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet(excelData);
+            XLSX.utils.book_append_sheet(wb, ws, "History Logs");
+            XLSX.writeFile(wb, "Warehouse_History_Audit.xlsx");
+        }
+
+        function filterDeliveries() {
+            const input = document.getElementById("deliverySearch").value.toUpperCase();
+            const rows = document.getElementById("deliveryBody").getElementsByTagName("tr");
+            let currentGroupRows = [];
+            let groupVisible = false;
+
+            for (let i = 0; i < rows.length; i++) {
+                if (rows[i].style.borderTop && rows[i].style.borderTop.includes("solid")) {
+                    if (currentGroupRows.length > 0) applyVisibility(currentGroupRows, groupVisible);
+                    currentGroupRows = [rows[i]];
+                    groupVisible = rows[i].innerText.toUpperCase().includes(input);
+                } else {
+                    currentGroupRows.push(rows[i]);
+                    if (rows[i].innerText.toUpperCase().includes(input)) groupVisible = true;
+                }
+            }
+            if (currentGroupRows.length > 0) applyVisibility(currentGroupRows, groupVisible);
+        }
+
+        function applyVisibility(rows, isVisible) {
+            rows.forEach(row => row.style.display = isVisible ? "" : "none");
+        }
+
+        window.onload = fetchInitialData;
+    </script>
+</body>
+</html>
