@@ -78,7 +78,7 @@
                 
                 <div class="form-group">
                     <label>Item Description (Common Name)</label>
-                    <input type="text" id="dr_name" list="inventory-data" placeholder="Piliin ang Item Name..." onchange="autoFillPrice()" onkeypress="handleEnter(event, 'dr_price')">
+                    <input type="text" id="dr_name" list="inventory-data" oninput="this.value = this.value.toUpperCase();" placeholder="Piliin ang Item Name..." onchange="autoFillPrice()" onkeypress="handleEnter(event, 'dr_price')">
                     <datalist id="inventory-data"></datalist>
                 </div>
 
@@ -91,7 +91,7 @@
 
                 <div class="form-group">
                     <label>Unique Barcode / Serial</label>
-                    <input type="text" id="dr_barcode" placeholder="I-scan o i-type ang barcode..." autofocus onkeypress="handleBarcodeEntry(event)">
+                    <input type="text" id="dr_barcode" oninput="this.value = this.value.toUpperCase();" placeholder="I-scan o i-type ang barcode..." autofocus onkeypress="handleBarcodeEntry(event)">
                 </div>
 
                 <div style="background: #f8f9fa; padding: 15px; border-radius: 6px; border-left: 4px solid var(--accent); margin-top: 20px;">

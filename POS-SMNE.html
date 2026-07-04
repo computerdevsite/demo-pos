@@ -70,8 +70,8 @@
                       </div>
                     <div class="form-group"><label>TIN</label><input type="text" id="tin_number" placeholder="000-000-000"></div>
                 </div>
-                <div class="form-group"><label>CUSTOMER NAME</label><input type="text" id="cust_name" placeholder="NAME OF CUSTOMER"></div>
-                <div class="form-group"><label>ADDRESS</label><input type="text" id="cust_address" placeholder="CUSTOMER ADDRESS"></div>
+                <div class="form-group"><label>CUSTOMER NAME</label><input type="text" id="cust_name" oninput="this.value = this.value.toUpperCase();" placeholder="NAME OF CUSTOMER"></div>
+                <div class="form-group"><label>ADDRESS</label><input type="text" id="cust_address" oninput="this.value = this.value.toUpperCase();" placeholder="CUSTOMER ADDRESS"></div>
 
                 <div class="barcode-section">
                     <label style="color:var(--accent);">SCAN ITEM BARCODE</label>
@@ -106,7 +106,7 @@
                     <label>VERIFY SELLER ID</label>
                     <div class="cashier-grid">
                         <label class="cashier-opt"><input type="radio" name="cashier" value="ARENAS" onchange="updateUI()">ARENAS</label>
-                        <label class="cashier-opt"><input type="radio" name="cashier" value="TANIELON" onchange="updateUI()">TANIELON</label>
+                        <label class="cashier-opt"><input type="radio" name="cashier" value="CLIMACO" onchange="updateUI()">CLIMACO</label>
                         <label class="cashier-opt"><input type="radio" name="cashier" value="KING KING" onchange="updateUI()">KING KING</label>
                         <label class="cashier-opt"><input type="radio" name="cashier" value="BUEMIO" onchange="updateUI()">BUEMIO</label>
                         <label class="cashier-opt"><input type="radio" name="cashier" value="BROZO" onchange="updateUI()">BROZO</label>

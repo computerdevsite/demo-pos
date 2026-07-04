@@ -86,13 +86,13 @@
                 
                 <div class="form-group">
                     <label>Item Description</label>
-                    <input type="text" id="dr_name" list="inventory-data" placeholder="Search item..." onchange="autoFillPrice()" onkeypress="handleEnter(event, 'dr_price')">
+                    <input type="text" id="dr_name" list="inventory-data" oninput="this.value = this.value.toUpperCase();" placeholder="Search item..." onchange="autoFillPrice()" onkeypress="handleEnter(event, 'dr_price')">
                     <datalist id="inventory-data"></datalist>
                 </div>
 
                 <div class="form-group">
                     <label>Unique Barcode / Serial</label>
-                    <input type="text" id="dr_barcode" placeholder="Scan unit barcode..." autofocus onkeypress="handleBarcodeEntry(event)">
+                    <input type="text" id="dr_barcode" oninput="this.value = this.value.toUpperCase();" placeholder="Scan unit barcode..." autofocus onkeypress="handleBarcodeEntry(event)">
                 </div>
 
                 <div class="form-group">
