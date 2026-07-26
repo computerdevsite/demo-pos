@@ -6,10 +6,10 @@
     <title>SM NORTH EDSA - Transaction Logs</title>
     <link href="css/pos.css" rel="stylesheet">
     <style>
-        /* Karagdagang style para sa Stats Cards */
+        /* Karagdagang style para sa Stats Cards at Filter */
         .stats-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: repeat(4, 1fr);
             gap: 20px;
             margin-bottom: 20px;
         }
@@ -29,6 +29,45 @@
         .stat-value {
             font-size: 1.8rem;
             font-weight: bold;
+        }
+        .filter-container {
+            background: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .filter-container label {
+            font-weight: 600;
+            color: #333;
+            font-size: 0.9rem;
+        }
+        .filter-container input[type="month"] {
+            padding: 8px 12px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            outline: none;
+        }
+        .filter-container button {
+            padding: 8px 15px;
+            background: #1a73e8;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .filter-container button:hover {
+            background: #1557b0;
+        }
+        @media(max-width: 1200px) {
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
         }
     </style>
 </head>
@@ -64,6 +103,21 @@
                 <div class="stat-label">Monthly Sales Total</div>
                 <div id="monthlyTotal" class="stat-value" style="color: #1a73e8;">₱0.00</div>
             </div>
+            <div class="stat-card" style="border-left: 5px solid #e67e22;">
+                <div class="stat-label">Product Total</div>
+                <div id="productTotal" class="stat-value" style="color: #e67e22;">₱0.00</div>
+            </div>
+            <div class="stat-card" style="border-left: 5px solid #8e44ad;">
+                <div class="stat-label">Service Total</div>
+                <div id="serviceTotal" class="stat-value" style="color: #8e44ad;">₱0.00</div>
+            </div>
+        </div>
+
+        <!-- Month Filter Section -->
+        <div class="filter-container">
+            <label for="monthFilter">Filter by Month:</label>
+            <input type="month" id="monthFilter" onchange="filterByMonth()">
+            <button onclick="resetMonthFilter()" style="background: #e74c3c;">Show All / Reset</button>
         </div>
 
         <div class="table-container">
@@ -90,18 +144,33 @@
     <script>
     const SHEETS_URL = "https://script.google.com/macros/s/AKfycbxKnZHePSbSMqf1G_lcnF867kEL6Idq6yNEBWiu2XtklhljQlCnloSshXHXNoHY6wUi/exec";
     
+    let globalRawData = []; 
+    let globalGroups = [];  
+    
     async function loadTransactions() {
         const status = document.getElementById('sync-status');
-        const tbody = document.getElementById('txnBody');
         const dailyDisplay = document.getElementById('dailyTotal');
         const monthlyDisplay = document.getElementById('monthlyTotal');
+        
+        // Set the month input value to the current year and month (YYYY-MM) by default
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const currentMonthVal = `${year}-${month}`;
+        
+        const monthFilterInput = document.getElementById('monthFilter');
+        if (monthFilterInput && !monthFilterInput.value) {
+            monthFilterInput.value = currentMonthVal;
+        }
         
         try {
             const response = await fetch(`${SHEETS_URL}?action=getTransactions`);
             let rawData = await response.json();
             
             rawData.shift(); 
+            globalRawData = rawData; 
             
+            const tbody = document.getElementById('txnBody');
             tbody.innerHTML = '';
 
             if (!rawData || rawData.length === 0) {
@@ -116,7 +185,6 @@
             let dailySum = 0;
             let monthlySum = 0;
 
-            const now = new Date();
             const todayStr = now.toLocaleDateString();
             const currentMonth = now.getMonth();
             const currentYear = now.getFullYear();
@@ -127,11 +195,11 @@
                 const serviceFee = parseFloat(r[21]) || 0;
                 const itemPrice = (productSales + serviceFee).toLocaleString(undefined, {minimumFractionDigits: 2});
 
+                const txnDate = r[0] ? new Date(r[0]) : null;
+
                 if (siInRow !== "") {
                     if (currentGroup) groups.push(currentGroup);
                     
-                    // Parse Date and Add to Totals
-                    const txnDate = r[0] ? new Date(r[0]) : null;
                     const txnTotalAmount = parseFloat(r[15]) || 0;
 
                     if (txnDate && !isNaN(txnDate)) {
@@ -153,6 +221,7 @@
                     else if (r[9] || r[14]) cashierName = "BROZO";
 
                     currentGroup = {
+                        rawDate: txnDate,
                         main: {
                             date: txnDate ? txnDate.toLocaleDateString() : "---",
                             si: siInRow,
@@ -160,10 +229,13 @@
                             name: r[3] || "---",
                             address: r[4] || "---",
                             total: '₱' + txnTotalAmount.toLocaleString(undefined, {minimumFractionDigits: 2}),
+                            rawTotal: txnTotalAmount,
                             cashier: cashierName,
                             barcode: r[18] || "---",
                             itemName: r[19] || "---",
-                            price: '₱' + itemPrice
+                            price: '₱' + itemPrice,
+                            productSales: productSales,
+                            serviceFee: serviceFee
                         },
                         subItems: []
                     };
@@ -171,62 +243,135 @@
                     currentGroup.subItems.push({
                         barcode: r[18] || "---",
                         itemName: r[19] || "---",
-                        price: '₱' + itemPrice
+                        price: '₱' + itemPrice,
+                        productSales: productSales,
+                        serviceFee: serviceFee
                     });
                 }
             });
             if (currentGroup) groups.push(currentGroup);
 
-            // Update Header Stats
+            globalGroups = groups.reverse();
+
+            // Update Daily & Monthly Sales Total headers
             dailyDisplay.innerText = '₱' + dailySum.toLocaleString(undefined, {minimumFractionDigits: 2});
             monthlyDisplay.innerText = '₱' + monthlySum.toLocaleString(undefined, {minimumFractionDigits: 2});
 
-            let useAltColor = false;
-
-            groups.reverse().forEach(group => {
-                useAltColor = !useAltColor;
-                const groupBg = useAltColor ? "#f2f7ff" : "#ffffff";
-
-                const mainTr = document.createElement('tr');
-                mainTr.style.backgroundColor = groupBg;
-                mainTr.style.borderTop = "2px solid #1a73e8"; 
-                
-                mainTr.innerHTML = `
-                    <td style="font-weight:600;">${group.main.date}</td>
-                    <td style="font-weight:bold; color:#e67e22;">${group.main.si}</td>
-                    <td>${group.main.tin}</td>
-                    <td style="font-weight:600;">${group.main.name}</td>
-                    <td>${group.main.address}</td>
-                    <td style="font-weight:bold; color: #27ae60;">${group.main.total}</td>
-                    <td><span class="status-badge">${group.main.cashier}</span></td>
-                    <td>
-                        <div style="font-weight:600;">${group.main.itemName}</div>
-                        <div style="font-size:0.8rem; color:#2c3e50; font-weight:bold;">Price: ${group.main.price}</div>
-                        <div style="font-size:0.7rem; color:#888;">Code: ${group.main.barcode}</div>
-                    </td>
-                `;
-                tbody.appendChild(mainTr);
-
-                group.subItems.forEach(sub => {
-                    const subTr = document.createElement('tr');
-                    subTr.style.backgroundColor = groupBg;
-                    subTr.innerHTML = `
-                        <td colspan="7" style="border:none;"></td> 
-                        <td style="border-top: 1px dashed #ddd;">
-                            <div style="font-weight:600; color:#555;">${sub.itemName}</div>
-                            <div style="font-size:0.8rem; color:#2c3e50; font-weight:bold;">Price: ${sub.price}</div>
-                            <div style="font-size:0.7rem; color:#888;">Code: ${sub.barcode}</div>
-                        </td>
-                    `;
-                    tbody.appendChild(subTr);
-                });
-            });
-
+            // Automatically filter and render table + totals based on the default current month
+            filterByMonth();
             status.innerText = "Active";
         } catch (error) {
             status.innerText = "Error grouping data.";
             console.error(error);
         }
+    }
+
+    function renderTable(groupsToRender) {
+        const tbody = document.getElementById('txnBody');
+        tbody.innerHTML = '';
+
+        if (!groupsToRender || groupsToRender.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;">No records found for this month.</td></tr>';
+            return;
+        }
+
+        let useAltColor = false;
+
+        groupsToRender.forEach(group => {
+            useAltColor = !useAltColor;
+            const groupBg = useAltColor ? "#f2f7ff" : "#ffffff";
+
+            const mainTr = document.createElement('tr');
+            mainTr.style.backgroundColor = groupBg;
+            mainTr.style.borderTop = "2px solid #1a73e8"; 
+            
+            mainTr.innerHTML = `
+                <td style="font-weight:600;">${group.main.date}</td>
+                <td style="font-weight:bold; color:#e67e22;">${group.main.si}</td>
+                <td>${group.main.tin}</td>
+                <td style="font-weight:600;">${group.main.name}</td>
+                <td>${group.main.address}</td>
+                <td style="font-weight:bold; color: #27ae60;">${group.main.total}</td>
+                <td><span class="status-badge">${group.main.cashier}</span></td>
+                <td>
+                    <div style="font-weight:600;">${group.main.itemName}</div>
+                    <div style="font-size:0.8rem; color:#2c3e50; font-weight:bold;">Price: ${group.main.price}</div>
+                    <div style="font-size:0.7rem; color:#888;">Code: ${group.main.barcode}</div>
+                </td>
+            `;
+            tbody.appendChild(mainTr);
+
+            group.subItems.forEach(sub => {
+                const subTr = document.createElement('tr');
+                subTr.style.backgroundColor = groupBg;
+                subTr.innerHTML = `
+                    <td colspan="7" style="border:none;"></td> 
+                    <td style="border-top: 1px dashed #ddd;">
+                        <div style="font-weight:600; color:#555;">${sub.itemName}</div>
+                        <div style="font-size:0.8rem; color:#2c3e50; font-weight:bold;">Price: ${sub.price}</div>
+                        <div style="font-size:0.7rem; color:#888;">Code: ${sub.barcode}</div>
+                    </td>
+                `;
+                tbody.appendChild(subTr);
+            });
+        });
+    }
+
+    function filterByMonth() {
+        const monthInput = document.getElementById('monthFilter').value;
+        const productDisplay = document.getElementById('productTotal');
+        const serviceDisplay = document.getElementById('serviceTotal');
+
+        if (!monthInput) return;
+
+        const [selectedYear, selectedMonth] = monthInput.split('-').map(Number);
+
+        const filtered = globalGroups.filter(group => {
+            if (!group.rawDate || isNaN(group.rawDate)) return false;
+            return group.rawDate.getFullYear() === selectedYear && (group.rawDate.getMonth() + 1) === selectedMonth;
+        });
+
+        let filteredProductSum = 0;
+        let filteredServiceSum = 0;
+
+        filtered.forEach(group => {
+            filteredProductSum += (group.main.productSales || 0);
+            filteredServiceSum += (group.main.serviceFee || 0);
+            
+            group.subItems.forEach(sub => {
+                filteredProductSum += (sub.productSales || 0);
+                filteredServiceSum += (sub.serviceFee || 0);
+            });
+        });
+
+        productDisplay.innerText = '₱' + filteredProductSum.toLocaleString(undefined, {minimumFractionDigits: 2});
+        serviceDisplay.innerText = '₱' + filteredServiceSum.toLocaleString(undefined, {minimumFractionDigits: 2});
+
+        renderTable(filtered);
+    }
+
+    function resetMonthFilter() {
+        document.getElementById('monthFilter').value = '';
+        const productDisplay = document.getElementById('productTotal');
+        const serviceDisplay = document.getElementById('serviceTotal');
+
+        let totalProductSum = 0;
+        let totalServiceSum = 0;
+
+        globalGroups.forEach(group => {
+            totalProductSum += (group.main.productSales || 0);
+            totalServiceSum += (group.main.serviceFee || 0);
+
+            group.subItems.forEach(sub => {
+                totalProductSum += (sub.productSales || 0);
+                totalServiceSum += (sub.serviceFee || 0);
+            });
+        });
+
+        productDisplay.innerText = '₱' + totalProductSum.toLocaleString(undefined, {minimumFractionDigits: 2});
+        serviceDisplay.innerText = '₱' + totalServiceSum.toLocaleString(undefined, {minimumFractionDigits: 2});
+
+        renderTable(globalGroups);
     }
 
     function filterTransactions() {
