@@ -1,0 +1,93 @@
+
+
+/* 1. Default Style (Desktop - lagpas 1024px) */
+/* Dito mo ilalagay ang design para sa malalaking screen */
+
+/* 2. Tablet (max-width: 1024px) */
+@media only screen and (max-width: 1024px) {
+  
+}
+
+/* 3. Mobile (max-width: 768px pababa) */
+@media only screen and (max-width: 768px) {
+   .sidebar {
+  position: fixed;
+  top: 0;
+  left: -300px; /* Naka-hide sa labas ng screen */
+  width: 300px;
+  height: 100%;
+  
+  
+  /* I-set ang transition */
+  transition: all 0.4s ease-in-out;
+  
+  /* Siguraduhin na naka-display block para ma-render siya */
+  display: block !important; 
+  opacity: 0;
+  visibility: hidden;
+}
+
+/* Dito natin sasabihan ang CSS na kapag ang element 
+   ay may inline style na display: block (galing sa script mo),
+   i-apply ang slide animation.
+*/
+.sidebar[style*="display: block"] {
+  left: 0;
+  opacity: 1;
+  visibility: visible;
+}
+}
+
+.stats-grid{
+    display: flex;
+    flex-direction: column;
+}
+
+table{
+    width: 100%;
+}
+
+tr{
+    display: flex;
+    flex-direction: column;
+    align-items: start;
+}
+
+thead{
+    display: none;
+}
+
+.header-with-selector{
+    font-size: 12px;
+    display: flex;
+    justify-content: space-around;
+    width: auto;
+}
+
+.top-nav{
+    width: auto;
+   height: 5%;
+   position: fixed;
+}
+
+.store-dropdown{
+    font-size: 10px;
+}
+
+#sync-status{
+    font-size: 7px;
+}
+
+.headTxt, .badge-admin{
+    display: none;
+}
+
+#sync-status{
+    display: flex;
+}
+
+
+/* 4. Small Mobile (max-width: 480px pababa) */
+@media only screen and (max-width: 480px) {
+  
+}

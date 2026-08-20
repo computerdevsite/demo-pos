@@ -1,0 +1,337 @@
+
+.checkout-btn{
+  display: none;
+}
+
+#hamburgerNav{
+  display: none;
+}
+
+#hamburgerNavBck{
+  display: none;
+}
+
+/* 1. Default Style (Desktop - lagpas 1024px) */
+/* Dito mo ilalagay ang design para sa malalaking screen */
+
+/* 2. Tablet (max-width: 1024px) */
+@media (min-width: 769x) and (max-width: 1024px) {
+  .sidebar {
+  position: fixed;
+  top: 0;
+  left: -300px; /* Naka-hide sa labas ng screen */
+  width: 300px;
+  height: 100%;
+  
+  
+  /* I-set ang transition */
+  transition: all 0.4s ease-in-out;
+  
+  /* Siguraduhin na naka-display block para ma-render siya */
+  display: block !important; 
+  opacity: 0;
+  visibility: hidden;
+}
+
+/* Dito natin sasabihan ang CSS na kapag ang element 
+   ay may inline style na display: block (galing sa script mo),
+   i-apply ang slide animation.
+*/
+.sidebar[style*="display: block"] {
+  left: 0;
+  opacity: 1;
+  visibility: visible;
+}
+
+
+
+.right-panel {
+  position: fixed;
+  top: -100%;
+  left: -300px; /* Naka-hide sa labas ng screen */
+  /* I-set ang transition */
+  transition: all 0.4s ease-in-out;
+  /* Siguraduhin na naka-display block para ma-render siya */
+  display: block !important; 
+  opacity: 0;
+  visibility: hidden;
+}
+
+/* Dito natin sasabihan ang CSS na kapag ang element 
+   ay may inline style na display: block (galing sa script mo),
+   i-apply ang slide animation.
+*/
+.right-panel[style*="display: block"] {
+  top: 0;
+  opacity: 1;
+  visibility: visible;
+}
+
+
+/****************************************************/
+
+#hamburgerNav{
+  display: block;
+}
+
+
+  .sidebar{
+    display: none;
+    position: absolute;
+    height: 100%;
+    width: 100%;
+    opacity: 0.97;
+  }
+
+  .badge-cashier{
+    text-align: center;
+  }
+
+  #active-user{
+    text-align: center;
+  }
+
+  .right-panel{
+    display: none;
+    position: fixed;
+    top: 2%;
+    left: 1.5%;
+    height: 100%;
+    width: auto;
+  }
+
+  .cart-container{
+    height: 12%;
+  }
+
+ 
+
+  #hamburgerNav{
+    display: block;
+    border: none;
+    background-color: white;
+    width:  auto;
+    height: 100%;
+    font-size: large;
+    margin: 0px 10px 0px -20px;
+  }
+
+  #hamburgerNavBck{
+    display: block;
+    border: none;
+    background-color: #2c3e50;
+    width:  auto;
+    height: 100%;
+    font-size: large;
+    
+  }
+
+
+.top-bar{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 0px 5px;
+}
+
+.cashier-info{
+  display: flex;
+  margin: 0px 5px;
+  justify-content: space-evenly;
+}
+
+#loading-indicator{
+  font-size: 10px;
+}
+
+
+.checkout-btn {
+  width: 100%;         /* Full width ng container */
+  padding: 15px;
+  background-color: #28a745; /* Green para sa Checkout */
+  color: white;
+  border: none;
+  border-radius: 8px;  /* Pabilog ang kanto */
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  display: block;
+}
+
+.checkout-btn:active {
+  background-color: #218838; /* darker green pag kinlik */
+}
+
+.sidebar-header{
+  display: flex;
+  align-items: center;
+  justify-content: last baseline;
+}
+
+}
+
+
+/* 3. Mobile (max-width: 768px pababa) */
+@media only screen and (max-width: 768px) {
+  .sidebar {
+  position: fixed;
+  top: 0;
+  left: -300px; /* Naka-hide sa labas ng screen */
+  width: 300px;
+  height: 100%;
+  
+  
+  /* I-set ang transition */
+  transition: all 0.4s ease-in-out;
+  
+  /* Siguraduhin na naka-display block para ma-render siya */
+  display: block !important; 
+  opacity: 0;
+  visibility: hidden;
+}
+
+/* Dito natin sasabihan ang CSS na kapag ang element 
+   ay may inline style na display: block (galing sa script mo),
+   i-apply ang slide animation.
+*/
+.sidebar[style*="display: block"] {
+  left: 0;
+  opacity: 1;
+  visibility: visible;
+}
+
+
+
+.right-panel {
+  position: fixed;
+  top: -100%;
+  left: -300px; /* Naka-hide sa labas ng screen */
+  /* I-set ang transition */
+  transition: all 0.4s ease-in-out;
+  /* Siguraduhin na naka-display block para ma-render siya */
+  display: block !important; 
+  opacity: 0;
+  visibility: hidden;
+}
+
+/* Dito natin sasabihan ang CSS na kapag ang element 
+   ay may inline style na display: block (galing sa script mo),
+   i-apply ang slide animation.
+*/
+.right-panel[style*="display: block"] {
+  top: 0;
+  opacity: 1;
+  visibility: visible;
+}
+
+
+/****************************************************/
+
+#hamburgerNav{
+  display: block;
+}
+
+
+  .sidebar{
+    display: none;
+    position: absolute;
+    height: 100%;
+    width: 100%;
+    opacity: 0.97;
+  }
+
+  .badge-cashier{
+    text-align: center;
+  }
+
+  #active-user{
+    text-align: center;
+  }
+
+  .right-panel{
+    display: none;
+    position: fixed;
+    top: 2%;
+    left: 2%;
+    height: 83%;
+    width: 86%;
+  }
+
+  .cart-container{
+    height: 23%;
+
+  }
+
+  #hamburgerNav{
+    display: block;
+    border: none;
+    background-color: white;
+    width:  auto;
+    height: 100%;
+    font-size: large;
+    margin: 0px 10px 0px -20px;
+  }
+
+  #hamburgerNavBck{
+    display: block;
+    border: none;
+    background-color: #2c3e50;
+    width:  auto;
+    height: 100%;
+    font-size: large;
+    
+  }
+
+
+.top-bar{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 0px 5px;
+}
+
+.cashier-info{
+  display: flex;
+  margin: 0px 5px;
+  justify-content: space-evenly;
+}
+
+#loading-indicator{
+  font-size: 10px;
+}
+
+
+.checkout-btn {
+  width: 100%;         /* Full width ng container */
+  padding: 15px;
+  background-color: #28a745; /* Green para sa Checkout */
+  color: white;
+  border: none;
+  border-radius: 8px;  /* Pabilog ang kanto */
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  display: block;
+}
+
+.checkout-btn:active {
+  background-color: #218838; /* darker green pag kinlik */
+}
+
+.sidebar-header{
+  display: flex;
+  align-items: center;
+  justify-content: last baseline;
+}
+
+}
+
+
+
+
+
+
+/* 4. Small Mobile (max-width: 480px pababa) */
+@media only screen and (max-width: 480px) {
+  
+}
